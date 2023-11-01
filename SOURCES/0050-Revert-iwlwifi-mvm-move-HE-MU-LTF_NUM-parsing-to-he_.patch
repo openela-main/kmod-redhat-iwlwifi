@@ -1,0 +1,74 @@
+From f29430ff87e1ed63de31f76d4d6e5e07567649f3 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:46:30 +0200
+Subject: [PATCH 21/43] Revert "iwlwifi: mvm: move HE-MU LTF_NUM parsing to
+ he_phy_data parsing"
+
+This reverts commit 42d8a9d5783e4efdbdf746b139dc98e2b64f3ce3.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 35 +++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 10 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.872312776 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.039310646 +0200
+@@ -1079,13 +1079,6 @@
+ 				IWL_RX_HE_PHY_INFO_TYPE_MU_EXT_INFO;
+ 		if (sigb_data)
+ 			iwl_mvm_decode_he_sigb(mvm, desc, rate_n_flags, he_mu);
+-
+-		he->data2 |=
+-			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_NUM_LTF_SYMS_KNOWN);
+-		he->data5 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_HE_LTF_NUM_MASK,
+-						   he_phy_data),
+-					 IEEE80211_RADIOTAP_HE_DATA5_NUM_LTF_SYMS);
+ 	}
+ 
+ 	if (he_type != RATE_MCS_HE_TYPE_TRIG) {
+@@ -1269,8 +1262,9 @@
+ 
+ 	he->data5 |= le16_encode_bits(ltf, IEEE80211_RADIOTAP_HE_DATA5_LTF_SIZE);
+ 
+-	if (he_type == RATE_MCS_HE_TYPE_SU ||
+-	    he_type == RATE_MCS_HE_TYPE_EXT_SU) {
++	switch (he_type) {
++	case RATE_MCS_HE_TYPE_SU:
++	case RATE_MCS_HE_TYPE_EXT_SU: {
+ 		u16 val;
+ 
+ 		/* LTF syms correspond to streams */
+@@ -1300,10 +1294,31 @@
+ 				  rx_status->nss);
+ 			val = 0;
+ 		}
+-
+ 		he->data5 |=
+ 			le16_encode_bits(val,
+ 					 IEEE80211_RADIOTAP_HE_DATA5_NUM_LTF_SYMS);
++		}
++		break;
++	case RATE_MCS_HE_TYPE_MU: {
++		u16 val;
++
++		if (he_phy_data == HE_PHY_DATA_INVAL)
++			break;
++
++		val = FIELD_GET(IWL_RX_HE_PHY_HE_LTF_NUM_MASK,
++				he_phy_data);
++
++		he->data2 |=
++			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_NUM_LTF_SYMS_KNOWN);
++		he->data5 |=
++			cpu_to_le16(FIELD_PREP(
++				IEEE80211_RADIOTAP_HE_DATA5_NUM_LTF_SYMS,
++				val));
++		}
++		break;
++	case RATE_MCS_HE_TYPE_TRIG:
++		/* not supported */
++		break;
+ 	}
+ }
+ 

@@ -1,0 +1,26 @@
+From 62a3de9ef101ff11c6214783901a89a82751cb41 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:46:22 +0200
+Subject: [PATCH 20/43] Revert "iwlwifi: mvm: add TXOP to HE radiotap data"
+
+This reverts commit 2b1476345fb6c837fae608c4fd9fddb48059c612.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.709314856 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.872312776 +0200
+@@ -1050,11 +1050,6 @@
+ 						he_phy_data),
+ 				      IEEE80211_RADIOTAP_HE_DATA3_BSS_COLOR);
+ 
+-	he->data2 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_TXOP_KNOWN);
+-	he->data6 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_TXOP_DUR_MASK,
+-						he_phy_data),
+-				      IEEE80211_RADIOTAP_HE_DATA6_TXOP);
+-
+ 	if (he_mu) {
+ 		bool sigb_data;
+ 

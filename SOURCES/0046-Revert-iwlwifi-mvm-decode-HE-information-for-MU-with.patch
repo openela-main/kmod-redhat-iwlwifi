@@ -1,0 +1,46 @@
+From b712a47190ab9b19b44c22a357b3d7921710226e Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:46:00 +0200
+Subject: [PATCH 17/43] Revert "iwlwifi: mvm: decode HE information for MU
+ (without ext info)"
+
+This reverts commit 8a07e8d4b7361d3eb522b1306e33f50e4836e340.
+---
+ drivers/net/wireless/intel/iwlwifi/fw/api/rx.h | 8 ++++----
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c  | 3 +--
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 01:25:42.865325621 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 01:25:43.369319192 +0200
+@@ -366,10 +366,10 @@
+ 	/* trigger encoded */
+ 	IWL_RX_HE_PHY_RU_ALLOC_MASK		= 0xfe0000000000ULL,
+ 	IWL_RX_HE_PHY_INFO_TYPE_MASK		= 0xf000000000000000ULL,
+-	IWL_RX_HE_PHY_INFO_TYPE_SU		= 0x0, /* TSF low valid (first DW) */
+-	IWL_RX_HE_PHY_INFO_TYPE_MU		= 0x1, /* TSF low/high valid (both DWs) */
+-	IWL_RX_HE_PHY_INFO_TYPE_MU_EXT_INFO	= 0x2, /* same + SIGB-common0/1/2 valid */
+-	IWL_RX_HE_PHY_INFO_TYPE_TB		= 0x3, /* TSF low/high valid (both DWs) */
++	IWL_RX_HE_PHY_INFO_TYPE_SU		= 0x0,
++	IWL_RX_HE_PHY_INFO_TYPE_MU		= 0x1,
++	IWL_RX_HE_PHY_INFO_TYPE_MU_EXT_INFO	= 0x2,
++	IWL_RX_HE_PHY_INFO_TYPE_TB_EXT_INFO	= 0x3,
+ 
+ 	/* second dword - MU data */
+ 	IWL_RX_HE_PHY_MU_SIGB_COMPRESSION		= BIT_ULL(32 + 0),
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.205321284 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.370319180 +0200
+@@ -1135,9 +1135,8 @@
+ 	}
+ 
+ 	switch (FIELD_GET(IWL_RX_HE_PHY_INFO_TYPE_MASK, he_phy_data)) {
+-	case IWL_RX_HE_PHY_INFO_TYPE_MU:
+ 	case IWL_RX_HE_PHY_INFO_TYPE_MU_EXT_INFO:
+-	case IWL_RX_HE_PHY_INFO_TYPE_TB:
++	case IWL_RX_HE_PHY_INFO_TYPE_TB_EXT_INFO:
+ 		iwl_mvm_decode_he_phy_ru_alloc(he_phy_data, rate_n_flags,
+ 					       he, he_mu, rx_status);
+ 		break;

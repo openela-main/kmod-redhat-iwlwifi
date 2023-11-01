@@ -1,0 +1,71 @@
+From f6fa861cd23ef48520a150969c39f5315cda5165 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 16:52:26 +0200
+Subject: [PATCH 03/43] Revert "iwlwifi: mvm: limit TLC according to our HE
+ capabilities"
+
+This reverts commit 529281bdf0fc6af56d15957e5b823cb1de564b82.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c | 34 ++++----------------------
+ 1 file changed, 5 insertions(+), 29 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-05 14:40:03.011478963 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 01:25:40.953350009 +0200
+@@ -230,43 +230,19 @@
+ 
+ static void
+ rs_fw_he_set_enabled_rates(const struct ieee80211_sta *sta,
+-			   struct ieee80211_supported_band *sband,
++			   const struct ieee80211_sta_he_cap *he_cap,
+ 			   struct iwl_tlc_config_cmd *cmd)
+ {
+-	const struct ieee80211_sta_he_cap *he_cap = &sta->he_cap;
+-	u16 mcs_160 = le16_to_cpu(he_cap->he_mcs_nss_supp.rx_mcs_160);
+-	u16 mcs_80 = le16_to_cpu(he_cap->he_mcs_nss_supp.rx_mcs_80);
+-	u16 tx_mcs_80 =
+-		le16_to_cpu(sband->iftype_data->he_cap.he_mcs_nss_supp.tx_mcs_80);
+-	u16 tx_mcs_160 =
+-		le16_to_cpu(sband->iftype_data->he_cap.he_mcs_nss_supp.tx_mcs_160);
++	u16 mcs_160 = le16_to_cpu(sta->he_cap.he_mcs_nss_supp.rx_mcs_160);
++	u16 mcs_80 = le16_to_cpu(sta->he_cap.he_mcs_nss_supp.rx_mcs_80);
+ 	int i;
+ 
+ 	for (i = 0; i < sta->rx_nss && i < MAX_NSS; i++) {
+ 		u16 _mcs_160 = (mcs_160 >> (2 * i)) & 0x3;
+ 		u16 _mcs_80 = (mcs_80 >> (2 * i)) & 0x3;
+-		u16 _tx_mcs_160 = (tx_mcs_160 >> (2 * i)) & 0x3;
+-		u16 _tx_mcs_80 = (tx_mcs_80 >> (2 * i)) & 0x3;
+ 
+-		/* If one side doesn't support - mark both as not supporting */
+-		if (_mcs_80 == IEEE80211_HE_MCS_NOT_SUPPORTED ||
+-		    _tx_mcs_80 == IEEE80211_HE_MCS_NOT_SUPPORTED) {
+-			_mcs_80 = IEEE80211_HE_MCS_NOT_SUPPORTED;
+-			_tx_mcs_80 = IEEE80211_HE_MCS_NOT_SUPPORTED;
+-		}
+-		if (_mcs_80 > _tx_mcs_80)
+-			_mcs_80 = _tx_mcs_80;
+ 		cmd->ht_rates[i][0] =
+ 			cpu_to_le16(rs_fw_he_ieee80211_mcs_to_rs_mcs(_mcs_80));
+-
+-		/* If one side doesn't support - mark both as not supporting */
+-		if (_mcs_160 == IEEE80211_HE_MCS_NOT_SUPPORTED ||
+-		    _tx_mcs_160 == IEEE80211_HE_MCS_NOT_SUPPORTED) {
+-			_mcs_160 = IEEE80211_HE_MCS_NOT_SUPPORTED;
+-			_tx_mcs_160 = IEEE80211_HE_MCS_NOT_SUPPORTED;
+-		}
+-		if (_mcs_160 > _tx_mcs_160)
+-			_mcs_160 = _tx_mcs_160;
+ 		cmd->ht_rates[i][1] =
+ 			cpu_to_le16(rs_fw_he_ieee80211_mcs_to_rs_mcs(_mcs_160));
+ 	}
+@@ -295,7 +271,7 @@
+ 	/* HT/VHT rates */
+ 	if (he_cap && he_cap->has_he) {
+ 		cmd->mode = IWL_TLC_MNG_MODE_HE;
+-		rs_fw_he_set_enabled_rates(sta, sband, cmd);
++		rs_fw_he_set_enabled_rates(sta, he_cap, cmd);
+ 	} else if (vht_cap && vht_cap->vht_supported) {
+ 		cmd->mode = IWL_TLC_MNG_MODE_VHT;
+ 		rs_fw_vht_set_enabled_rates(sta, vht_cap, cmd);

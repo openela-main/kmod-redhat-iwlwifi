@@ -1,0 +1,46 @@
+From 3335a827ae30b9575209c9c06e5086239da6fcd0 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 25 Jul 2019 19:33:04 +0200
+Subject: [PATCH 5/7] Revert "iwlwifi: mvm: stop static queues correctly"
+
+This reverts commit 99944b73069d8bcea573c07df8dc8d4f33e78586.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/ops.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/ops.c b/drivers/net/wireless/intel/iwlwifi/mvm/ops.c
+index dfc94882316c..41fc17807a43 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/ops.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/ops.c
+@@ -1103,12 +1103,6 @@ static void iwl_mvm_async_cb(struct iwl_op_mode *op_mode,
+ 	iwl_trans_block_txq_ptrs(mvm->trans, false);
+ }
+ 
+-static int iwl_mvm_is_static_queue(struct iwl_mvm *mvm, int queue)
+-{
+-	return queue == mvm->aux_queue || queue == mvm->probe_queue ||
+-		queue == mvm->p2p_dev_queue || queue == mvm->snif_queue;
+-}
+-
+ static void iwl_mvm_queue_state_change(struct iwl_op_mode *op_mode,
+ 				       int hw_queue, bool start)
+ {
+@@ -1135,15 +1129,6 @@ static void iwl_mvm_queue_state_change(struct iwl_op_mode *op_mode,
+ 		goto out;
+ 	mvmsta = iwl_mvm_sta_from_mac80211(sta);
+ 
+-	if (iwl_mvm_is_static_queue(mvm, hw_queue)) {
+-		if (!start)
+-			ieee80211_stop_queues(mvm->hw);
+-		else if (mvmsta->sta_state != IEEE80211_STA_NOTEXIST)
+-			ieee80211_wake_queues(mvm->hw);
+-
+-		goto out;
+-	}
+-
+ 	if (iwl_mvm_has_new_tx_api(mvm)) {
+ 		int tid = mvm->tvqm_info[hw_queue].txq_tid;
+ 
+-- 
+2.13.6
+

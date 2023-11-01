@@ -1,0 +1,35 @@
+From f42afed74bd0869fed5a8cf2e99c4e06211f0e38 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:19:04 +0200
+Subject: [PATCH 09/43] Revert "iwlwifi: mvm: clean up NO_PSDU case"
+
+This reverts commit ed714460a0ecd1d382a4cda1247fd6eb2666de28.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:41.856338491 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:42.023336361 +0200
+@@ -274,7 +274,10 @@
+ 					    struct ieee80211_sta *sta,
+ 					    bool csi)
+ {
+-	if (iwl_mvm_check_pn(mvm, skb, queue, sta))
++	struct ieee80211_rx_status *rx_status = IEEE80211_SKB_RXCB(skb);
++
++	if (!(rx_status->flag & RX_FLAG_NO_PSDU) &&
++	    iwl_mvm_check_pn(mvm, skb, queue, sta))
+ 		kfree_skb(skb);
+ 	else
+ 		ieee80211_rx_napi(mvm->hw, sta, skb, napi);
+@@ -1814,7 +1817,7 @@
+ 		rx_status->rate_idx = rate;
+ 	}
+ 
+-	ieee80211_rx_napi(mvm->hw, sta, skb, napi);
++	iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb, queue, sta, false);
+ out:
+ 	rcu_read_unlock();
+ }

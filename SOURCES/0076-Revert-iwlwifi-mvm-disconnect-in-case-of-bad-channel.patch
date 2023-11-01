@@ -1,0 +1,320 @@
+From af78069a8e25027e8ea2d3cb3fdbe545b398db34 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:44:00 +0200
+Subject: [PATCH 3/6] Revert "iwlwifi: mvm: disconnect in case of bad channel
+ switch parameters"
+
+This reverts commit f67806140220caa3d4337e6c60989b520e13f9a8.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c  |   7 +-
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c  | 171 +++++++++------------
+ drivers/net/wireless/intel/iwlwifi/mvm/mvm.h       |   1 -
+ .../net/wireless/intel/iwlwifi/mvm/time-event.c    |   5 +-
+ 4 files changed, 77 insertions(+), 107 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-09-06 01:36:13.967210247 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-09-06 01:45:49.470800771 +0200
+@@ -8,7 +8,7 @@
+  * Copyright(c) 2012 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2013 - 2014 Intel Mobile Communications GmbH
+  * Copyright(c) 2015 - 2017 Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of version 2 of the GNU General Public License as
+@@ -31,7 +31,7 @@
+  * Copyright(c) 2012 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2013 - 2014 Intel Mobile Communications GmbH
+  * Copyright(c) 2015 - 2017 Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  * All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+@@ -1631,7 +1631,6 @@
+ 
+ 	rcu_read_lock();
+ 	vif = rcu_dereference(mvm->vif_id_to_mac[mac_id]);
+-	mvmvif = iwl_mvm_vif_from_mac80211(vif);
+ 
+ 	switch (vif->type) {
+ 	case NL80211_IFTYPE_AP:
+@@ -1640,6 +1639,7 @@
+ 			    csa_vif != vif))
+ 			goto out_unlock;
+ 
++		mvmvif = iwl_mvm_vif_from_mac80211(csa_vif);
+ 		csa_id = FW_CMD_ID_AND_COLOR(mvmvif->id, mvmvif->color);
+ 		if (WARN(csa_id != id_n_color,
+ 			 "channel switch noa notification on unexpected vif (csa_vif=%d, notif=%d)",
+@@ -1660,7 +1660,6 @@
+ 		return;
+ 	case NL80211_IFTYPE_STATION:
+ 		iwl_mvm_csa_client_absent(mvm, vif);
+-		cancel_delayed_work(&mvmvif->csa_work);
+ 		ieee80211_chswitch_done(vif, true);
+ 		break;
+ 	default:
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:49.284803166 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:49.471800758 +0200
+@@ -1337,91 +1337,6 @@
+ 	return iwl_mvm_send_cmd_pdu(mvm, REDUCE_TX_POWER_CMD, 0, len, &cmd);
+ }
+ 
+-static int iwl_mvm_post_channel_switch(struct ieee80211_hw *hw,
+-				       struct ieee80211_vif *vif)
+-{
+-	struct iwl_mvm_vif *mvmvif = iwl_mvm_vif_from_mac80211(vif);
+-	struct iwl_mvm *mvm = IWL_MAC80211_GET_MVM(hw);
+-	int ret;
+-
+-	mutex_lock(&mvm->mutex);
+-
+-	if (mvmvif->csa_failed) {
+-		mvmvif->csa_failed = false;
+-		ret = -EIO;
+-		goto out_unlock;
+-	}
+-
+-	if (vif->type == NL80211_IFTYPE_STATION) {
+-		struct iwl_mvm_sta *mvmsta;
+-
+-		mvmvif->csa_bcn_pending = false;
+-		mvmsta = iwl_mvm_sta_from_staid_protected(mvm,
+-							  mvmvif->ap_sta_id);
+-
+-		if (WARN_ON(!mvmsta)) {
+-			ret = -EIO;
+-			goto out_unlock;
+-		}
+-
+-		iwl_mvm_sta_modify_disable_tx(mvm, mvmsta, false);
+-
+-		iwl_mvm_mac_ctxt_changed(mvm, vif, false, NULL);
+-
+-		ret = iwl_mvm_enable_beacon_filter(mvm, vif, 0);
+-		if (ret)
+-			goto out_unlock;
+-
+-		iwl_mvm_stop_session_protection(mvm, vif);
+-	}
+-
+-	mvmvif->ps_disabled = false;
+-
+-	ret = iwl_mvm_power_update_ps(mvm);
+-
+-out_unlock:
+-	mutex_unlock(&mvm->mutex);
+-
+-	return ret;
+-}
+-
+-static void iwl_mvm_abort_channel_switch(struct ieee80211_hw *hw,
+-					 struct ieee80211_vif *vif)
+-{
+-	struct iwl_mvm *mvm = IWL_MAC80211_GET_MVM(hw);
+-	struct iwl_mvm_vif *mvmvif = iwl_mvm_vif_from_mac80211(vif);
+-	struct iwl_chan_switch_te_cmd cmd = {
+-		.mac_id = cpu_to_le32(FW_CMD_ID_AND_COLOR(mvmvif->id,
+-							  mvmvif->color)),
+-		.action = cpu_to_le32(FW_CTXT_ACTION_REMOVE),
+-	};
+-
+-	IWL_DEBUG_MAC80211(mvm, "Abort CSA on mac %d\n", mvmvif->id);
+-
+-	mutex_lock(&mvm->mutex);
+-	WARN_ON(iwl_mvm_send_cmd_pdu(mvm,
+-				     WIDE_ID(MAC_CONF_GROUP,
+-					     CHANNEL_SWITCH_TIME_EVENT_CMD),
+-				     0, sizeof(cmd), &cmd));
+-	mutex_unlock(&mvm->mutex);
+-
+-	WARN_ON(iwl_mvm_post_channel_switch(hw, vif));
+-}
+-
+-static void iwl_mvm_channel_switch_disconnect_wk(struct work_struct *wk)
+-{
+-	struct iwl_mvm *mvm;
+-	struct iwl_mvm_vif *mvmvif;
+-	struct ieee80211_vif *vif;
+-
+-	mvmvif = container_of(wk, struct iwl_mvm_vif, csa_work.work);
+-	vif = container_of((void *)mvmvif, struct ieee80211_vif, drv_priv);
+-	mvm = mvmvif->mvm;
+-
+-	iwl_mvm_abort_channel_switch(mvm->hw, vif);
+-	ieee80211_chswitch_done(vif, false);
+-}
+-
+ static int iwl_mvm_mac_add_interface(struct ieee80211_hw *hw,
+ 				     struct ieee80211_vif *vif)
+ {
+@@ -1548,8 +1463,6 @@
+ 	}
+ 
+ 	iwl_mvm_tcm_add_vif(mvm, vif);
+-	INIT_DELAYED_WORK(&mvmvif->csa_work,
+-			  iwl_mvm_channel_switch_disconnect_wk);
+ 
+ 	if (vif->type == NL80211_IFTYPE_MONITOR)
+ 		mvm->monitor_on = true;
+@@ -4106,7 +4019,6 @@
+ 				    0, sizeof(cmd), &cmd);
+ }
+ 
+-#define IWL_MAX_CSA_BLOCK_TX 1500
+ static int iwl_mvm_pre_channel_switch(struct ieee80211_hw *hw,
+ 				      struct ieee80211_vif *vif,
+ 				      struct ieee80211_channel_switch *chsw)
+@@ -4171,18 +4083,8 @@
+ 				((vif->bss_conf.beacon_int * (chsw->count - 1) -
+ 				  IWL_MVM_CHANNEL_SWITCH_TIME_CLIENT) * 1024);
+ 
+-		if (chsw->block_tx) {
++		if (chsw->block_tx)
+ 			iwl_mvm_csa_client_absent(mvm, vif);
+-			/*
+-			 * In case of undetermined / long time with immediate
+-			 * quiet monitor status to gracefully disconnect
+-			 */
+-			if (!chsw->count ||
+-			    chsw->count * vif->bss_conf.beacon_int >
+-			    IWL_MAX_CSA_BLOCK_TX)
+-				schedule_delayed_work(&mvmvif->csa_work,
+-						      msecs_to_jiffies(IWL_MAX_CSA_BLOCK_TX));
+-		}
+ 
+ 		if (mvmvif->bf_data.bf_enabled) {
+ 			ret = iwl_mvm_disable_beacon_filter(mvm, vif, 0);
+@@ -4217,6 +4119,54 @@
+ 	return ret;
+ }
+ 
++static int iwl_mvm_post_channel_switch(struct ieee80211_hw *hw,
++				       struct ieee80211_vif *vif)
++{
++	struct iwl_mvm_vif *mvmvif = iwl_mvm_vif_from_mac80211(vif);
++	struct iwl_mvm *mvm = IWL_MAC80211_GET_MVM(hw);
++	int ret;
++
++	mutex_lock(&mvm->mutex);
++
++	if (mvmvif->csa_failed) {
++		mvmvif->csa_failed = false;
++		ret = -EIO;
++		goto out_unlock;
++	}
++
++	if (vif->type == NL80211_IFTYPE_STATION) {
++		struct iwl_mvm_sta *mvmsta;
++
++		mvmvif->csa_bcn_pending = false;
++		mvmsta = iwl_mvm_sta_from_staid_protected(mvm,
++							  mvmvif->ap_sta_id);
++
++		if (WARN_ON(!mvmsta)) {
++			ret = -EIO;
++			goto out_unlock;
++		}
++
++		iwl_mvm_sta_modify_disable_tx(mvm, mvmsta, false);
++
++		iwl_mvm_mac_ctxt_changed(mvm, vif, false, NULL);
++
++		ret = iwl_mvm_enable_beacon_filter(mvm, vif, 0);
++		if (ret)
++			goto out_unlock;
++
++		iwl_mvm_stop_session_protection(mvm, vif);
++	}
++
++	mvmvif->ps_disabled = false;
++
++	ret = iwl_mvm_power_update_ps(mvm);
++
++out_unlock:
++	mutex_unlock(&mvm->mutex);
++
++	return ret;
++}
++
+ static void iwl_mvm_channel_switch_rx_beacon(struct ieee80211_hw *hw,
+ 					     struct ieee80211_vif *vif,
+ 					     struct ieee80211_channel_switch *chsw)
+@@ -4243,6 +4193,29 @@
+ 				     CMD_ASYNC, sizeof(cmd), &cmd));
+ }
+ 
++static void iwl_mvm_abort_channel_switch(struct ieee80211_hw *hw,
++					 struct ieee80211_vif *vif)
++{
++	struct iwl_mvm *mvm = IWL_MAC80211_GET_MVM(hw);
++	struct iwl_mvm_vif *mvmvif = iwl_mvm_vif_from_mac80211(vif);
++	struct iwl_chan_switch_te_cmd cmd = {
++		.mac_id = cpu_to_le32(FW_CMD_ID_AND_COLOR(mvmvif->id,
++							  mvmvif->color)),
++		.action = cpu_to_le32(FW_CTXT_ACTION_REMOVE),
++	};
++
++	IWL_DEBUG_MAC80211(mvm, "Abort CSA on mac %d\n", mvmvif->id);
++
++	mutex_lock(&mvm->mutex);
++	WARN_ON(iwl_mvm_send_cmd_pdu(mvm,
++				     WIDE_ID(MAC_CONF_GROUP,
++					     CHANNEL_SWITCH_TIME_EVENT_CMD),
++				     0, sizeof(cmd), &cmd));
++	mutex_unlock(&mvm->mutex);
++
++	WARN_ON(iwl_mvm_post_channel_switch(hw, vif));
++}
++
+ static void iwl_mvm_flush_no_vif(struct iwl_mvm *mvm, u32 queues, bool drop)
+ {
+ 	int i;
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 01:45:49.284803166 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 01:45:49.471800758 +0200
+@@ -490,7 +490,6 @@
+ 	bool csa_countdown;
+ 	bool csa_failed;
+ 	u16 csa_target_freq;
+-	struct delayed_work csa_work;
+ 
+ 	/* Indicates that we are waiting for a beacon on a new channel */
+ 	bool csa_bcn_pending;
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/time-event.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/time-event.c	2019-06-27 14:54:04.140678253 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/time-event.c	2019-09-06 01:45:49.472800745 +0200
+@@ -8,7 +8,7 @@
+  * Copyright(c) 2012 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2013 - 2015 Intel Mobile Communications GmbH
+  * Copyright(c) 2017 Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of version 2 of the GNU General Public License as
+@@ -31,7 +31,7 @@
+  * Copyright(c) 2012 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2013 - 2015 Intel Mobile Communications GmbH
+  * Copyright(c) 2017 Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  * All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+@@ -234,7 +234,6 @@
+ 			break;
+ 		}
+ 		iwl_mvm_csa_client_absent(mvm, te_data->vif);
+-		cancel_delayed_work(&mvmvif->csa_work);
+ 		ieee80211_chswitch_done(te_data->vif, true);
+ 		break;
+ 	default:

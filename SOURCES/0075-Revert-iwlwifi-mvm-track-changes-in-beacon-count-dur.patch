@@ -1,0 +1,58 @@
+From 866f912283b38bb8429ae5d0ce11e4f0575f6d84 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:40:46 +0200
+Subject: [PATCH 2/6] Revert "iwlwifi: mvm: track changes in beacon count
+ during channel switch"
+
+This reverts commit 81b4e44e41e651735dd185f78a8fe2f4d53c61d4.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 15 ---------------
+ drivers/net/wireless/intel/iwlwifi/mvm/mvm.h      |  2 --
+ 2 files changed, 17 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:48.986807002 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:49.284803166 +0200
+@@ -4197,9 +4197,6 @@
+ 			iwl_mvm_schedule_csa_period(mvm, vif,
+ 						    vif->bss_conf.beacon_int,
+ 						    apply_time);
+-
+-		mvmvif->csa_count = chsw->count;
+-		mvmvif->csa_misbehave = false;
+ 		break;
+ 	default:
+ 		break;
+@@ -4238,18 +4235,6 @@
+ 	if (!fw_has_capa(&mvm->fw->ucode_capa, IWL_UCODE_TLV_CAPA_CS_MODIFY))
+ 		return;
+ 
+-	if (chsw->count >= mvmvif->csa_count && chsw->block_tx) {
+-		if (mvmvif->csa_misbehave) {
+-			/* Second time, give up on this AP*/
+-			iwl_mvm_abort_channel_switch(hw, vif);
+-			ieee80211_chswitch_done(vif, false);
+-			mvmvif->csa_misbehave = false;
+-			return;
+-		}
+-		mvmvif->csa_misbehave = true;
+-	}
+-	mvmvif->csa_count = chsw->count;
+-
+ 	IWL_DEBUG_MAC80211(mvm, "Modify CSA on mac %d\n", mvmvif->id);
+ 
+ 	WARN_ON(iwl_mvm_send_cmd_pdu(mvm,
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 01:36:13.968210234 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 01:45:49.284803166 +0200
+@@ -490,8 +490,6 @@
+ 	bool csa_countdown;
+ 	bool csa_failed;
+ 	u16 csa_target_freq;
+-	u16 csa_count;
+-	u16 csa_misbehave;
+ 	struct delayed_work csa_work;
+ 
+ 	/* Indicates that we are waiting for a beacon on a new channel */

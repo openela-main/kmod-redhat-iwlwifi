@@ -1,0 +1,54 @@
+From 561fda1e84ed74901a9e95ce348318de9d800071 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 17:39:33 +0200
+Subject: [PATCH 05/43] Revert "iwlwifi: mvm: fix HE radiotap data4 for HE-TB
+ PPDUs"
+
+This reverts commit 2286a99c32344c41bf2d046e74d20d5c1839026e.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-06-27 14:54:04.139678265 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:41.303345545 +0200
+@@ -1109,6 +1109,7 @@
+ 	case IWL_RX_PHY_INFO_TYPE_HE_TB:
+ 		/* HE common */
+ 		he->data1 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_LDPC_XSYMSEG_KNOWN |
++					 IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_DOPPLER_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_BSS_COLOR_KNOWN);
+ 		he->data2 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRE_FEC_PAD_KNOWN |
+@@ -1128,6 +1129,9 @@
+ 		he->data3 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA0_HE_LDPC_EXT_SYM),
+ 					      IEEE80211_RADIOTAP_HE_DATA3_LDPC_XSYMSEG);
++		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d0,
++							    IWL_RX_PHY_DATA0_HE_SPATIAL_REUSE_MASK),
++					      IEEE80211_RADIOTAP_HE_DATA4_SU_MU_SPTL_REUSE);
+ 		he->data5 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA0_HE_PRE_FEC_PAD_MASK),
+ 					      IEEE80211_RADIOTAP_HE_DATA5_PRE_FEC_PAD);
+@@ -1146,20 +1150,6 @@
+ 		break;
+ 	}
+ 
+-	switch (phy_data->info_type) {
+-	case IWL_RX_PHY_INFO_TYPE_HE_MU_EXT:
+-	case IWL_RX_PHY_INFO_TYPE_HE_MU:
+-	case IWL_RX_PHY_INFO_TYPE_HE_SU:
+-		he->data1 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE_KNOWN);
+-		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+-							    IWL_RX_PHY_DATA0_HE_SPATIAL_REUSE_MASK),
+-					      IEEE80211_RADIOTAP_HE_DATA4_SU_MU_SPTL_REUSE);
+-		break;
+-	default:
+-		/* nothing here */
+-		break;
+-	}
+-
+ 	switch (phy_data->info_type) {
+ 	case IWL_RX_PHY_INFO_TYPE_HE_MU_EXT:
+ 		he_mu->flags1 |=

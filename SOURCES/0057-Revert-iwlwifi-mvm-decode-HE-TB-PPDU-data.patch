@@ -1,0 +1,135 @@
+From 302d708fad6d37c7c42760f0a8a9f7398dec5d01 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:47:48 +0200
+Subject: [PATCH 28/43] Revert "iwlwifi: mvm: decode HE TB PPDU data"
+
+This reverts commit 764f9de5027149518b1633e5846b21b9fb882363.
+---
+ drivers/net/wireless/intel/iwlwifi/fw/api/rx.h | 21 ++++++--------
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c  | 38 ++++++++++++--------------
+ 2 files changed, 25 insertions(+), 34 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 01:25:43.369319192 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 01:25:45.197295875 +0200
+@@ -360,27 +360,22 @@
+ 	/* 6 bits reserved */
+ 	IWL_RX_HE_PHY_DELIM_EOF			= BIT(31),
+ 
+-	/* second dword - common data */
++	/* second dword - MU data */
++	IWL_RX_HE_PHY_SIGB_COMPRESSION		= BIT_ULL(32 + 0),
++	IWL_RX_HE_PHY_SIBG_SYM_OR_USER_NUM_MASK	= 0x1e00000000ULL,
+ 	IWL_RX_HE_PHY_HE_LTF_NUM_MASK		= 0xe000000000ULL,
+ 	IWL_RX_HE_PHY_RU_ALLOC_SEC80		= BIT_ULL(32 + 8),
+ 	/* trigger encoded */
+ 	IWL_RX_HE_PHY_RU_ALLOC_MASK		= 0xfe0000000000ULL,
++	IWL_RX_HE_PHY_SIGB_MCS_MASK		= 0xf000000000000ULL,
++	/* 1 bit reserved */
++	IWL_RX_HE_PHY_SIGB_DCM			= BIT_ULL(32 + 21),
++	IWL_RX_HE_PHY_PREAMBLE_PUNC_TYPE_MASK	= 0xc0000000000000ULL,
++	/* 4 bits reserved */
+ 	IWL_RX_HE_PHY_INFO_TYPE_MASK		= 0xf000000000000000ULL,
+ 	IWL_RX_HE_PHY_INFO_TYPE_SU		= 0x0,
+ 	IWL_RX_HE_PHY_INFO_TYPE_MU		= 0x1,
+ 	IWL_RX_HE_PHY_INFO_TYPE_MU_EXT_INFO	= 0x2,
+-	IWL_RX_HE_PHY_INFO_TYPE_TB_EXT_INFO	= 0x3,
+-
+-	/* second dword - MU data */
+-	IWL_RX_HE_PHY_MU_SIGB_COMPRESSION		= BIT_ULL(32 + 0),
+-	IWL_RX_HE_PHY_MU_SIBG_SYM_OR_USER_NUM_MASK	= 0x1e00000000ULL,
+-	IWL_RX_HE_PHY_MU_SIGB_MCS_MASK			= 0xf000000000000ULL,
+-	IWL_RX_HE_PHY_MU_SIGB_DCM			= BIT_ULL(32 + 21),
+-	IWL_RX_HE_PHY_MU_PREAMBLE_PUNC_TYPE_MASK	= 0xc0000000000000ULL,
+-
+-	/* second dword - TB data */
+-	IWL_RX_HE_PHY_TB_PILOT_TYPE			= BIT_ULL(32 + 0),
+-	IWL_RX_HE_PHY_TB_LOW_SS_MASK			= 0xe00000000ULL
+ };
+ 
+ enum iwl_rx_he_sigb_common0 {
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:45.032297980 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:45.197295875 +0200
+@@ -1035,23 +1035,23 @@
+ 		}
+ 	} else if (overload && he_mu && he_phy_data != HE_PHY_DATA_INVAL) {
+ 		he_mu->flags1 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIBG_SYM_OR_USER_NUM_MASK,
+-						   he_phy_data),
++			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_SIBG_SYM_OR_USER_NUM_MASK,
++						  he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_SIG_B_SYMS_USERS);
+ 		he_mu->flags1 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIGB_DCM,
+-						   he_phy_data),
++			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_SIGB_DCM,
++						  he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS1_SIG_B_DCM);
+ 		he_mu->flags1 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIGB_MCS_MASK,
+-						   he_phy_data),
++			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_SIGB_MCS_MASK,
++						  he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS1_SIG_B_MCS);
+ 		he_mu->flags2 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIGB_COMPRESSION,
+-						   he_phy_data),
++			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_SIGB_COMPRESSION,
++						  he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_SIG_B_COMP);
+ 		he_mu->flags2 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_PREAMBLE_PUNC_TYPE_MASK,
++			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_PREAMBLE_PUNC_TYPE_MASK,
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_PUNC_FROM_SIG_A_BW);
+ 
+@@ -1096,18 +1096,15 @@
+ 		rx_status->he_ru = NL80211_RATE_INFO_HE_RU_ALLOC_106;
+ 	}
+ 
+-	if (he_phy_data != HE_PHY_DATA_INVAL &&
+-	    (FIELD_GET(IWL_RX_HE_PHY_INFO_TYPE_MASK, he_phy_data) ==
+-			IWL_RX_HE_PHY_INFO_TYPE_MU_EXT_INFO ||
+-	     FIELD_GET(IWL_RX_HE_PHY_INFO_TYPE_MASK, he_phy_data) ==
+-			IWL_RX_HE_PHY_INFO_TYPE_TB_EXT_INFO)) {
++	if (he_mu) {
+ 		/*
+ 		 * Unfortunately, we have to leave the mac80211 data
+ 		 * incorrect for the case that we receive an HE-MU
+-		 * transmission and *don't* have the HE phy data (due
+-		 * to the bits being used for TSF). This shouldn't
+-		 * happen though as management frames where we need
+-		 * the TSF/timers are not be transmitted in HE-MU.
++		 * transmission and *don't* have the he_mu pointer,
++		 * i.e. we don't have the phy data (due to the bits
++		 * being used for TSF). This shouldn't happen though
++		 * as management frames where we need the TSF/timers
++		 * are not be transmitted in HE-MU, I think.
+ 		 */
+ 		u8 ru = FIELD_GET(IWL_RX_HE_PHY_RU_ALLOC_MASK, he_phy_data);
+ 		u8 offs = 0;
+@@ -1150,11 +1147,10 @@
+ 					 IEEE80211_RADIOTAP_HE_DATA2_RU_OFFSET);
+ 		he->data2 |=
+ 			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRISEC_80_KNOWN);
+-		if (he_phy_data & IWL_RX_HE_PHY_RU_ALLOC_SEC80)
++		if (he_phy_data & IWL_RX_HE_PHY_RU_ALLOC_SEC80) {
+ 			he->data2 |=
+ 				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRISEC_80_SEC);
+ 
+-		if (he_mu) {
+ #define CHECK_BW(bw) \
+ 	BUILD_BUG_ON(IEEE80211_RADIOTAP_HE_MU_FLAGS2_BW_FROM_SIG_A_BW_ ## bw ## MHZ != \
+ 		     RATE_MCS_CHAN_WIDTH_##bw >> RATE_MCS_CHAN_WIDTH_POS)
+@@ -1162,7 +1158,7 @@
+ 			CHECK_BW(40);
+ 			CHECK_BW(80);
+ 			CHECK_BW(160);
+-			he->data2 |=
++			he_mu->flags2 |=
+ 				le16_encode_bits(FIELD_GET(RATE_MCS_CHAN_WIDTH_MSK,
+ 							   rate_n_flags),
+ 						 IEEE80211_RADIOTAP_HE_MU_FLAGS2_BW_FROM_SIG_A_BW);

@@ -1,0 +1,115 @@
+From a10ba457727c6da7a599619faeb440521eb467d4 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:54:25 +0200
+Subject: [PATCH 7/7] Revert "cfg80211: make wmm_rule part of the reg_rule
+ structure"
+
+This reverts commit 38cb87ee47fb825f6c9d645c019f75b3905c0ab2.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 50 +++++++++++++++++++---
+ include/net/cfg80211.h                             |  4 +-
+ include/net/regulatory.h                           |  4 +-
+ 3 files changed, 49 insertions(+), 9 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:58:31.263992860 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:58:39.281889631 +0200
+@@ -879,12 +879,15 @@
+ 	const u8 *nvm_chan = cfg->nvm_type == IWL_NVM_EXT ?
+ 			     iwl_ext_nvm_channels : iwl_nvm_channels;
+ 	struct ieee80211_regdomain *regd, *copy_rd;
+-	int size_of_regd, regd_to_copy;
++	int size_of_regd, regd_to_copy, wmms_to_copy;
++	int size_of_wmms = 0;
+ 	struct ieee80211_reg_rule *rule;
++	struct ieee80211_wmm_rule *wmm_rule, *d_wmm, *s_wmm;
+ 	struct regdb_ptrs *regdb_ptrs;
+ 	enum nl80211_band band;
+ 	int center_freq, prev_center_freq = 0;
+-	int valid_rules = 0;
++	int valid_rules = 0, n_wmms = 0;
++	int i;
+ 	bool new_rule;
+ 	int max_num_ch = cfg->nvm_type == IWL_NVM_EXT ?
+ 			 IWL_NVM_NUM_CHANNELS_EXT : IWL_NVM_NUM_CHANNELS;
+@@ -903,7 +906,11 @@
+ 		sizeof(struct ieee80211_regdomain) +
+ 		num_of_ch * sizeof(struct ieee80211_reg_rule);
+ 
+-	regd = kzalloc(size_of_regd, GFP_KERNEL);
++	if (geo_info & GEO_WMM_ETSI_5GHZ_INFO)
++		size_of_wmms =
++			num_of_ch * sizeof(struct ieee80211_wmm_rule);
++
++	regd = kzalloc(size_of_regd + size_of_wmms, GFP_KERNEL);
+ 	if (!regd)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -917,6 +924,8 @@
+ 	regd->alpha2[0] = fw_mcc >> 8;
+ 	regd->alpha2[1] = fw_mcc & 0xff;
+ 
++	wmm_rule = (struct ieee80211_wmm_rule *)((u8 *)regd + size_of_regd);
++
+ 	for (ch_idx = 0; ch_idx < num_of_ch; ch_idx++) {
+ 		ch_flags = (u16)__le32_to_cpup(channels + ch_idx);
+ 		band = (ch_idx < NUM_2GHZ_CHANNELS) ?
+@@ -970,10 +979,26 @@
+ 		    band == NL80211_BAND_2GHZ)
+ 			continue;
+ 
+-		reg_query_regdb_wmm(regd->alpha2, center_freq, rule);
++		if (!reg_query_regdb_wmm(regd->alpha2, center_freq,
++					 &regdb_ptrs[n_wmms].token, wmm_rule)) {
++			/* Add only new rules */
++			for (i = 0; i < n_wmms; i++) {
++				if (regdb_ptrs[i].token ==
++				    regdb_ptrs[n_wmms].token) {
++					rule->wmm_rule = regdb_ptrs[i].rule;
++					break;
++				}
++			}
++			if (i == n_wmms) {
++				rule->wmm_rule = wmm_rule;
++				regdb_ptrs[n_wmms++].rule = wmm_rule;
++				wmm_rule++;
++			}
++		}
+ 	}
+ 
+ 	regd->n_reg_rules = valid_rules;
++	regd->n_wmm_rules = n_wmms;
+ 
+ 	/*
+ 	 * Narrow down regdom for unused regulatory rules to prevent hole
+@@ -982,13 +1007,28 @@
+ 	regd_to_copy = sizeof(struct ieee80211_regdomain) +
+ 		valid_rules * sizeof(struct ieee80211_reg_rule);
+ 
+-	copy_rd = kzalloc(regd_to_copy, GFP_KERNEL);
++	wmms_to_copy = sizeof(struct ieee80211_wmm_rule) * n_wmms;
++
++	copy_rd = kzalloc(regd_to_copy + wmms_to_copy, GFP_KERNEL);
+ 	if (!copy_rd) {
+ 		copy_rd = ERR_PTR(-ENOMEM);
+ 		goto out;
+ 	}
+ 
+ 	memcpy(copy_rd, regd, regd_to_copy);
++	memcpy((u8 *)copy_rd + regd_to_copy, (u8 *)regd + size_of_regd,
++	       wmms_to_copy);
++
++	d_wmm = (struct ieee80211_wmm_rule *)((u8 *)copy_rd + regd_to_copy);
++	s_wmm = (struct ieee80211_wmm_rule *)((u8 *)regd + size_of_regd);
++
++	for (i = 0; i < regd->n_reg_rules; i++) {
++		if (!regd->reg_rules[i].wmm_rule)
++			continue;
++
++		copy_rd->reg_rules[i].wmm_rule = d_wmm +
++			(regd->reg_rules[i].wmm_rule - s_wmm);
++	}
+ 
+ out:
+ 	kfree(regdb_ptrs);

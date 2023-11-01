@@ -1,0 +1,24 @@
+From fc0bd30f367a3d76537c618b74d74c6e624162ee Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:47:32 +0200
+Subject: [PATCH 27/43] Revert "iwlwifi: mvm: report RU offset is known"
+
+This reverts commit a76938f35e4cfb9bc40a405220ec040f6b45d09c.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.863300136 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:45.032297980 +0200
+@@ -1149,8 +1149,7 @@
+ 			le16_encode_bits(offs,
+ 					 IEEE80211_RADIOTAP_HE_DATA2_RU_OFFSET);
+ 		he->data2 |=
+-			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRISEC_80_KNOWN |
+-				    IEEE80211_RADIOTAP_HE_DATA2_RU_OFFSET_KNOWN);
++			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRISEC_80_KNOWN);
+ 		if (he_phy_data & IWL_RX_HE_PHY_RU_ALLOC_SEC80)
+ 			he->data2 |=
+ 				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRISEC_80_SEC);

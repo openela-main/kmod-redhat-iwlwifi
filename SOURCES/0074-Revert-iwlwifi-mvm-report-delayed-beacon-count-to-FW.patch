@@ -1,0 +1,25 @@
+From 077242276a3c90947250db737df49a10bf9d37bb Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:37:40 +0200
+Subject: [PATCH 1/6] Revert "iwlwifi: mvm: report delayed beacon count to FW"
+
+This reverts commit 9cfcf71ce6ec80e1f233757e24a7b3a9181453a6.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:36:14.011209680 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:48.986807002 +0200
+@@ -4100,10 +4100,6 @@
+ 
+ 	lockdep_assert_held(&mvm->mutex);
+ 
+-	if (chsw->delay)
+-		cmd.cs_delayed_bcn_count =
+-			DIV_ROUND_UP(chsw->delay, vif->bss_conf.beacon_int);
+-
+ 	return iwl_mvm_send_cmd_pdu(mvm,
+ 				    WIDE_ID(MAC_CONF_GROUP,
+ 					    CHANNEL_SWITCH_TIME_EVENT_CMD),

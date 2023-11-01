@@ -1,0 +1,32 @@
+From a1e09a08fc21c3c17dc24f0d3413f8322c9c313f Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 25 Jul 2019 15:50:40 +0200
+Subject: [PATCH 4/7] Revert "iwlwifi: mvm: remove redundant condition"
+
+This reverts commit f992c61d59fb2eb1a234890ef92f378a47ebe20b.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/sta.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/sta.c b/drivers/net/wireless/intel/iwlwifi/mvm/sta.c
+index f545a737a92d..e3a35434a439 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/sta.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/sta.c
+@@ -793,9 +793,11 @@ static int iwl_mvm_sta_alloc_queue_tvqm(struct iwl_mvm *mvm,
+ 	if (queue < 0)
+ 		return queue;
+ 
+-	mvmtxq->txq_id = queue;
+-	mvm->tvqm_info[queue].txq_tid = tid;
+-	mvm->tvqm_info[queue].sta_id = mvmsta->sta_id;
++	if (sta) {
++		mvmtxq->txq_id = queue;
++		mvm->tvqm_info[queue].txq_tid = tid;
++		mvm->tvqm_info[queue].sta_id = mvmsta->sta_id;
++	}
+ 
+ 	IWL_DEBUG_TX_QUEUES(mvm, "Allocated queue is %d\n", queue);
+ 
+-- 
+2.13.6
+

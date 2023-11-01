@@ -1,0 +1,30 @@
+From e92d7bbbcc06e5b7bfd8031c2657b27ada83aeee Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 15:40:41 +0200
+Subject: [PATCH 3/5] Revert "iwlwifi: mvm: fix wrong DCM TLC config"
+
+This reverts commit 7703238ef7e56b96eb0d23e629245b1d56241224.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 15:42:07.472272934 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 15:42:07.640270270 +0200
+@@ -145,9 +145,14 @@
+ 
+ 	if (he_cap && he_cap->has_he &&
+ 	    (he_cap->he_cap_elem.phy_cap_info[3] &
+-	     IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_RX_MASK))
++	     IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_TX_MASK)) {
+ 		flags |= IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_1_MSK;
+ 
++		if (he_cap->he_cap_elem.phy_cap_info[3] &
++		    IEEE80211_HE_PHY_CAP3_DCM_MAX_TX_NSS_2)
++			flags |= IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_2_MSK;
++	}
++
+ 	return flags;
+ }
+ 

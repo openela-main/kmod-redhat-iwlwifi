@@ -1,0 +1,30 @@
+From a6926232ac2d027a9cb7edc5c1880944fed31bb9 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:44:14 +0200
+Subject: [PATCH 4/6] Revert "iwlwifi: mvm: notify FW on quiet mode in CSA"
+
+This reverts commit 77738865eb629e51e4135e9234016301da04c356.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:49.471800758 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:45:49.666798248 +0200
+@@ -4008,7 +4008,6 @@
+ 		.action = cpu_to_le32(FW_CTXT_ACTION_ADD),
+ 		.tsf = cpu_to_le32(chsw->timestamp),
+ 		.cs_count = chsw->count,
+-		.cs_mode = chsw->block_tx,
+ 	};
+ 
+ 	lockdep_assert_held(&mvm->mutex);
+@@ -4179,7 +4178,6 @@
+ 		.action = cpu_to_le32(FW_CTXT_ACTION_MODIFY),
+ 		.tsf = cpu_to_le32(chsw->timestamp),
+ 		.cs_count = chsw->count,
+-		.cs_mode = chsw->block_tx,
+ 	};
+ 
+ 	if (!fw_has_capa(&mvm->fw->ucode_capa, IWL_UCODE_TLV_CAPA_CS_MODIFY))

@@ -1,0 +1,39 @@
+From 7bb5884d5829f80853f441a7e7869b569a7a1f17 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 17:39:38 +0200
+Subject: [PATCH 06/43] Revert "iwlwifi: mvm: radiotap: remove UL_DL bit in HE
+ TRIG_BASED"
+
+This reverts commit 7969454b37f25d38a48bdbd9932e8aa49ed2ed77.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:41.303345545 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:41.483343249 +0200
+@@ -1109,6 +1109,7 @@
+ 	case IWL_RX_PHY_INFO_TYPE_HE_TB:
+ 		/* HE common */
+ 		he->data1 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_LDPC_XSYMSEG_KNOWN |
++					 IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_DOPPLER_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_BSS_COLOR_KNOWN);
+@@ -1119,13 +1120,9 @@
+ 		he->data3 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA0_HE_BSS_COLOR_MASK),
+ 					      IEEE80211_RADIOTAP_HE_DATA3_BSS_COLOR);
+-		if (phy_data->info_type != IWL_RX_PHY_INFO_TYPE_HE_TB &&
+-		    phy_data->info_type != IWL_RX_PHY_INFO_TYPE_HE_TB_EXT) {
+-			he->data1 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN);
+-			he->data3 |= le16_encode_bits(le32_get_bits(phy_data->d0,
++		he->data3 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA0_HE_UPLINK),
+-						      IEEE80211_RADIOTAP_HE_DATA3_UL_DL);
+-		}
++					      IEEE80211_RADIOTAP_HE_DATA3_UL_DL);
+ 		he->data3 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA0_HE_LDPC_EXT_SYM),
+ 					      IEEE80211_RADIOTAP_HE_DATA3_LDPC_XSYMSEG);

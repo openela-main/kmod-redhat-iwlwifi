@@ -1,0 +1,47 @@
+From 4f2b4c2c38836f9a20ac16ad0ddc8f273b1997a6 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:47:02 +0200
+Subject: [PATCH 25/43] Revert "iwlwifi: mvm: minor cleanups to HE radiotap
+ code"
+
+This reverts commit f9fe579386a84878eea9217c8e825a7d11335feb.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.531304371 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.696302266 +0200
+@@ -973,8 +973,9 @@
+ 	u64 he_phy_data = HE_PHY_DATA_INVAL;
+ 	struct ieee80211_radiotap_he *he = NULL;
+ 	struct ieee80211_radiotap_he_mu *he_mu = NULL;
+-	u32 he_type = rate_n_flags & RATE_MCS_HE_TYPE_MSK;
++	u32 he_type = 0xffffffff;
+ 	u8 stbc, ltf;
++
+ 	static const struct ieee80211_radiotap_he known = {
+ 		.data1 = cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_DATA_MCS_KNOWN |
+ 				     IEEE80211_RADIOTAP_HE_DATA1_DATA_DCM_KNOWN |
+@@ -998,14 +999,18 @@
+ 	radiotap_len += sizeof(known);
+ 	rx_status->flag |= RX_FLAG_RADIOTAP_HE;
+ 
++	he_type = rate_n_flags & RATE_MCS_HE_TYPE_MSK;
++
+ 	if (phy_info & IWL_RX_MPDU_PHY_TSF_OVERLOAD) {
+-		if (mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560)
++		if (mvm->trans->cfg->device_family >=
++				IWL_DEVICE_FAMILY_22560)
+ 			he_phy_data = le64_to_cpu(desc->v3.he_phy_data);
+ 		else
+ 			he_phy_data = le64_to_cpu(desc->v1.he_phy_data);
+ 
+ 		if (he_type == RATE_MCS_HE_TYPE_MU) {
+-			he_mu = skb_put_data(skb, &mu_known, sizeof(mu_known));
++			he_mu = skb_put_data(skb, &mu_known,
++					     sizeof(mu_known));
+ 			radiotap_len += sizeof(mu_known);
+ 			rx_status->flag |= RX_FLAG_RADIOTAP_HE_MU;
+ 		}

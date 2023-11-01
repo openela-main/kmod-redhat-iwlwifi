@@ -1,0 +1,55 @@
+From 49be6e27c80189463bf9940c42e49c8c803effee Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 25 Jul 2019 13:48:10 +0200
+Subject: [PATCH 1/7] Revert "iwlwifi: mvm: report FTM start time TSF when
+ applicable"
+
+This reverts commit cec2d4f6b4e3f7dba2f3281464d835d7003aaa6f.
+---
+ .../net/wireless/intel/iwlwifi/mvm/ftm-initiator.c   | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/ftm-initiator.c b/drivers/net/wireless/intel/iwlwifi/mvm/ftm-initiator.c
+index fec38a47696e..b15a4db7198e 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/ftm-initiator.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/ftm-initiator.c
+@@ -187,24 +187,12 @@ static void iwl_mvm_ftm_cmd(struct iwl_mvm *mvm, struct ieee80211_vif *vif,
+ 	for (i = 0; i < ETH_ALEN; i++)
+ 		cmd->macaddr_mask[i] = ~req->mac_addr_mask[i];
+ 
+-	if (vif->bss_conf.assoc) {
++	if (vif->bss_conf.assoc)
+ 		memcpy(cmd->range_req_bssid, vif->bss_conf.bssid, ETH_ALEN);
+-
+-		/* AP's TSF is only relevant if associated */
+-		for (i = 0; i < req->n_peers; i++) {
+-			if (req->peers[i].report_ap_tsf) {
+-				struct iwl_mvm_vif *mvmvif =
+-					iwl_mvm_vif_from_mac80211(vif);
+-
+-				cmd->tsf_mac_id = cpu_to_le32(mvmvif->id);
+-				return;
+-			}
+-		}
+-	} else {
++	else
+ 		eth_broadcast_addr(cmd->range_req_bssid);
+-	}
+ 
+-	/* Don't report AP's TSF */
++	/* TODO: fill in tsf_mac_id if needed */
+ 	cmd->tsf_mac_id = cpu_to_le32(0xff);
+ }
+ 
+@@ -539,8 +527,6 @@ void iwl_mvm_ftm_range_resp(struct iwl_mvm *mvm, struct iwl_rx_cmd_buffer *rxb)
+ 				fw_ap = (void *)&fw_resp_v6->ap[i];
+ 
+ 			result.final = fw_resp->ap[i].last_burst;
+-			result.ap_tsf = le32_to_cpu(fw_ap->start_tsf);
+-			result.ap_tsf_valid = 1;
+ 		} else {
+ 			/* the first part is the same for old and new APIs */
+ 			fw_ap = (void *)&fw_resp_v5->ap[i];
+-- 
+2.13.6
+

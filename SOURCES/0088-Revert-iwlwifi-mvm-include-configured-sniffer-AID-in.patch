@@ -1,0 +1,194 @@
+From 17ca0052ed9bc2267a6bf80c5e539299f59db930 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 02:09:49 +0200
+Subject: [PATCH 4/7] Revert "iwlwifi: mvm: include configured sniffer AID in
+ radiotap"
+
+This reverts commit 9bf13bee2d74a3b7bc0a59b1af7ad5f0a37f2176.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c  | 44 +----------------------
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c |  2 --
+ drivers/net/wireless/intel/iwlwifi/mvm/mvm.h      |  4 ---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c     | 39 +++-----------------
+ 4 files changed, 5 insertions(+), 84 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-06 02:17:21.739438249 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-06 02:17:21.908436074 +0200
+@@ -1781,33 +1781,11 @@
+ 	return ret ?: count;
+ }
+ 
+-struct iwl_mvm_sniffer_apply {
+-	struct iwl_mvm *mvm;
+-	u16 aid;
+-};
+-
+-static bool iwl_mvm_sniffer_apply(struct iwl_notif_wait_data *notif_data,
+-				  struct iwl_rx_packet *pkt, void *data)
+-{
+-	struct iwl_mvm_sniffer_apply *apply = data;
+-
+-	apply->mvm->cur_aid = cpu_to_le16(apply->aid);
+-
+-	return true;
+-}
+-
+ static ssize_t
+ iwl_dbgfs_he_sniffer_params_write(struct iwl_mvm *mvm, char *buf,
+-				  size_t count, loff_t *ppos)
++			size_t count, loff_t *ppos)
+ {
+-	struct iwl_notification_wait wait;
+ 	struct iwl_he_monitor_cmd he_mon_cmd = {};
+-	struct iwl_mvm_sniffer_apply apply = {
+-		.mvm = mvm,
+-	};
+-	u16 wait_cmds[] = {
+-		iwl_cmd_id(HE_AIR_SNIFFER_CONFIG_CMD, DATA_PATH_GROUP, 0),
+-	};
+ 	u32 aid;
+ 	int ret;
+ 
+@@ -1823,30 +1801,10 @@
+ 
+ 	he_mon_cmd.aid = cpu_to_le16(aid);
+ 
+-	apply.aid = aid;
+-
+ 	mutex_lock(&mvm->mutex);
+-
+-	/*
+-	 * Use the notification waiter to get our function triggered
+-	 * in sequence with other RX. This ensures that frames we get
+-	 * on the RX queue _before_ the new configuration is applied
+-	 * still have mvm->cur_aid pointing to the old AID, and that
+-	 * frames on the RX queue _after_ the firmware processed the
+-	 * new configuration (and sent the response, synchronously)
+-	 * get mvm->cur_aid correctly set to the new AID.
+-	 */
+-	iwl_init_notification_wait(&mvm->notif_wait, &wait,
+-				   wait_cmds, ARRAY_SIZE(wait_cmds),
+-				   iwl_mvm_sniffer_apply, &apply);
+-
+ 	ret = iwl_mvm_send_cmd_pdu(mvm, iwl_cmd_id(HE_AIR_SNIFFER_CONFIG_CMD,
+ 						   DATA_PATH_GROUP, 0), 0,
+ 				   sizeof(he_mon_cmd), &he_mon_cmd);
+-
+-	/* no need to really wait, we already did anyway */
+-	iwl_remove_notification(&mvm->notif_wait, &wait);
+-
+ 	mutex_unlock(&mvm->mutex);
+ 
+ 	return ret ?: count;
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 02:01:40.850551976 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 02:17:21.908436074 +0200
+@@ -1046,8 +1046,6 @@
+ 
+ 	iwl_mvm_stop_device(mvm);
+ 
+-	mvm->cur_aid = 0;
+-
+ 	mvm->scan_status = 0;
+ 	mvm->ps_disabled = false;
+ 	mvm->calibrating = false;
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 02:17:21.740438236 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 02:17:21.910436048 +0200
+@@ -1132,10 +1132,6 @@
+ 
+ 	/* does a monitor vif exist (only one can exist hence bool) */
+ 	bool monitor_on;
+-
+-	/* sniffer data to include in radiotap */
+-	__le16 cur_aid;
+-
+ #ifdef CONFIG_ACPI
+ 	struct iwl_mvm_sar_profile sar_profiles[ACPI_SAR_PROFILE_NUM];
+ 	struct iwl_mvm_geo_profile geo_profiles[ACPI_NUM_GEO_PROFILES];
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 02:17:21.577440335 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 02:17:21.910436048 +0200
+@@ -208,40 +208,11 @@
+ 	return 0;
+ }
+ 
+-static void iwl_mvm_add_rtap_sniffer_config(struct iwl_mvm *mvm,
+-					    struct sk_buff *skb)
+-{
+-	struct ieee80211_rx_status *rx_status = IEEE80211_SKB_RXCB(skb);
+-	struct ieee80211_vendor_radiotap *radiotap;
+-	int size = sizeof(*radiotap) + sizeof(__le16);
+-
+-	if (!mvm->cur_aid)
+-		return;
+-
+-	radiotap = skb_put(skb, size);
+-	radiotap->align = 1;
+-	/* Intel OUI */
+-	radiotap->oui[0] = 0xf6;
+-	radiotap->oui[1] = 0x54;
+-	radiotap->oui[2] = 0x25;
+-	/* radiotap sniffer config sub-namespace */
+-	radiotap->subns = 1;
+-	radiotap->present = 0x1;
+-	radiotap->len = size - sizeof(*radiotap);
+-	radiotap->pad = 0;
+-
+-	/* fill the data now */
+-	memcpy(radiotap->data, &mvm->cur_aid, sizeof(mvm->cur_aid));
+-
+-	rx_status->flag |= RX_FLAG_RADIOTAP_VENDOR_DATA;
+-}
+-
+ /* iwl_mvm_pass_packet_to_mac80211 - passes the packet for mac80211 */
+ static void iwl_mvm_pass_packet_to_mac80211(struct iwl_mvm *mvm,
+ 					    struct napi_struct *napi,
+ 					    struct sk_buff *skb, int queue,
+-					    struct ieee80211_sta *sta,
+-					    bool csi)
++					    struct ieee80211_sta *sta)
+ {
+ 	struct ieee80211_rx_status *rx_status = IEEE80211_SKB_RXCB(skb);
+ 
+@@ -510,7 +481,7 @@
+ 		while ((skb = __skb_dequeue(skb_list))) {
+ 			iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb,
+ 							reorder_buf->queue,
+-							sta, false);
++							sta);
+ 			reorder_buf->num_stored--;
+ 		}
+ 	}
+@@ -916,7 +887,6 @@
+ 	struct ieee80211_sta *sta = NULL;
+ 	struct sk_buff *skb;
+ 	u8 crypt_len = 0;
+-	bool csi = false;
+ 
+ 	if (unlikely(test_bit(IWL_MVM_STATUS_IN_HW_RESTART, &mvm->status)))
+ 		return;
+@@ -1171,8 +1141,7 @@
+ 	}
+ 
+ 	if (!iwl_mvm_reorder(mvm, napi, queue, sta, skb, desc))
+-		iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb, queue,
+-						sta, csi);
++		iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb, queue, sta);
+ out:
+ 	rcu_read_unlock();
+ }
+@@ -1305,7 +1274,7 @@
+ 		rx_status->rate_idx = rate;
+ 	}
+ 
+-	iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb, queue, sta, false);
++	iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb, queue, sta);
+ out:
+ 	rcu_read_unlock();
+ }

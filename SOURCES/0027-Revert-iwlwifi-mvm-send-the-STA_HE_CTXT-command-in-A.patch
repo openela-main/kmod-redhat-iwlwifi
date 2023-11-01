@@ -1,0 +1,25 @@
+From 1f187d76562086f95e2b1bd70f83b80225036edd Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 1 Aug 2019 14:14:26 +0200
+Subject: [PATCH 4/4] Revert "iwlwifi: mvm: send the STA_HE_CTXT command in AP
+ mode"
+
+This reverts commit 1abb08cc133bb25acbc5654450d2ed3b2ad80b73.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-08-01 14:25:56.841586365 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-08-01 14:26:11.117405971 +0200
+@@ -3102,9 +3102,6 @@
+ 		if (vif->type == NL80211_IFTYPE_AP) {
+ 			mvmvif->ap_assoc_sta_count++;
+ 			iwl_mvm_mac_ctxt_changed(mvm, vif, false, NULL);
+-			if (vif->bss_conf.he_support &&
+-			    !iwlwifi_mod_params.disable_11ax)
+-				iwl_mvm_cfg_he_sta(mvm, vif, mvm_sta->sta_id);
+ 		}
+ 
+ 		iwl_mvm_rs_rate_init(mvm, sta, mvmvif->phy_ctxt->channel->band,

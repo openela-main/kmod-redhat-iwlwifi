@@ -1,0 +1,25 @@
+From 1ddc8e8538b0b2c4b48bef0628f723337f8c6c35 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:53:35 +0200
+Subject: [PATCH 38/43] Revert "iwlwifi: mvm: add support for RX_AMPDU_EOF bit
+ for HE SU"
+
+This reverts commit 621f3f57050a71b05411f3665ef6b105a25af672.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:46.739276207 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:46.907274064 +0200
+@@ -1136,8 +1136,7 @@
+ 			mvm->ampdu_toggle = toggle_bit;
+ 
+ 			if (he_phy_data != HE_PHY_DATA_INVAL &&
+-			    (he_type == RATE_MCS_HE_TYPE_MU ||
+-			     he_type == RATE_MCS_HE_TYPE_SU)) {
++			    he_type == RATE_MCS_HE_TYPE_MU) {
+ 				rx_status->flag |= RX_FLAG_AMPDU_EOF_BIT_KNOWN;
+ 				if (FIELD_GET(IWL_RX_HE_PHY_DELIM_EOF,
+ 					      he_phy_data))

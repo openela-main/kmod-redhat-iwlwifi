@@ -1,0 +1,37 @@
+From 9c06dcda83c311ffcda2f3fe983bcd8c5cd458a1 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:46:53 +0200
+Subject: [PATCH 24/43] Revert "iwlwifi: mvm: put HE SIG-B symbols/users data
+ correctly"
+
+This reverts commit eb89c0fb9191e6ebd8f1af52624f1aa034b707b6.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.369306437 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.531304371 +0200
+@@ -1030,6 +1030,10 @@
+ 		}
+ 	} else if (he_phy_data != HE_PHY_DATA_INVAL && he_mu) {
+ 		he_mu->flags1 |=
++			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIBG_SYM_OR_USER_NUM_MASK,
++						   he_phy_data),
++					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_SIG_B_SYMS_USERS);
++		he_mu->flags1 |=
+ 			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIGB_DCM,
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS1_SIG_B_DCM);
+@@ -1038,10 +1042,6 @@
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS1_SIG_B_MCS);
+ 		he_mu->flags2 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIBG_SYM_OR_USER_NUM_MASK,
+-						   he_phy_data),
+-					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_SIG_B_SYMS_USERS);
+-		he_mu->flags2 |=
+ 			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIGB_COMPRESSION,
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_SIG_B_COMP);

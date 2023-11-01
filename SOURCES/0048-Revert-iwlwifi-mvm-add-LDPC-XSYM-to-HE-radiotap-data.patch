@@ -1,0 +1,38 @@
+From a25f92136344bc8586f99ba71b524570f2a8c18a Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:46:15 +0200
+Subject: [PATCH 19/43] Revert "iwlwifi: mvm: add LDPC-XSYM to HE radiotap
+ data"
+
+This reverts commit 750f43774eb43aa36465c2df5874dbeafb67c9bd.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.541316998 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.709314856 +0200
+@@ -1094,17 +1094,11 @@
+ 	}
+ 
+ 	if (he_type != RATE_MCS_HE_TYPE_TRIG) {
+-		u16 d1known = IEEE80211_RADIOTAP_HE_DATA1_LDPC_XSYMSEG_KNOWN |
+-			      IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN;
+-
+-		he->data1 |= cpu_to_le16(d1known);
+-
+-		he->data3 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_UPLINK,
+-							he_phy_data),
+-					      IEEE80211_RADIOTAP_HE_DATA3_UL_DL);
+-		he->data3 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_LDPC_EXT_SYM,
+-							he_phy_data),
+-					      IEEE80211_RADIOTAP_HE_DATA3_LDPC_XSYMSEG);
++		he->data1 |=
++			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN);
++		if (FIELD_GET(IWL_RX_HE_PHY_UPLINK, he_phy_data))
++			he->data3 |=
++				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA3_UL_DL);
+ 	}
+ 
+ 	switch (FIELD_GET(IWL_RX_HE_PHY_INFO_TYPE_MASK, he_phy_data)) {

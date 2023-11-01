@@ -1,0 +1,56 @@
+From 7d0e51654368bcd06c4945beee388012001bad6e Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:48:58 +0200
+Subject: [PATCH 31/43] Revert "iwlwifi: mvm: properly decode HE GI duration"
+
+This reverts commit 93cc712a7993194c5682978d46f859b8d288ed53.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:45.550291373 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:45.716289255 +0200
+@@ -1197,35 +1197,25 @@
+ 	switch ((rate_n_flags & RATE_MCS_HE_GI_LTF_MSK) >>
+ 		RATE_MCS_HE_GI_LTF_POS) {
+ 	case 0:
+-		if (he_type == RATE_MCS_HE_TYPE_TRIG)
+-			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_1_6;
+-		else
+-			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_0_8;
++		rx_status->he_gi = NL80211_RATE_INFO_HE_GI_0_8;
+ 		if (he_type == RATE_MCS_HE_TYPE_MU)
+ 			ltf = IEEE80211_RADIOTAP_HE_DATA5_LTF_SIZE_4X;
+ 		else
+ 			ltf = IEEE80211_RADIOTAP_HE_DATA5_LTF_SIZE_1X;
+ 		break;
+ 	case 1:
+-		if (he_type == RATE_MCS_HE_TYPE_TRIG)
+-			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_1_6;
+-		else
+-			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_0_8;
++		rx_status->he_gi = NL80211_RATE_INFO_HE_GI_0_8;
+ 		ltf = IEEE80211_RADIOTAP_HE_DATA5_LTF_SIZE_2X;
+ 		break;
+ 	case 2:
+-		if (he_type == RATE_MCS_HE_TYPE_TRIG) {
+-			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_3_2;
++		rx_status->he_gi = NL80211_RATE_INFO_HE_GI_1_6;
++		if (he_type == RATE_MCS_HE_TYPE_TRIG)
+ 			ltf = IEEE80211_RADIOTAP_HE_DATA5_LTF_SIZE_4X;
+-		} else {
+-			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_1_6;
++		else
+ 			ltf = IEEE80211_RADIOTAP_HE_DATA5_LTF_SIZE_2X;
+-		}
+ 		break;
+ 	case 3:
+-		if ((he_type == RATE_MCS_HE_TYPE_SU ||
+-		     he_type == RATE_MCS_HE_TYPE_EXT_SU) &&
+-		    rate_n_flags & RATE_MCS_SGI_MSK)
++		if (rate_n_flags & RATE_MCS_SGI_MSK)
+ 			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_0_8;
+ 		else
+ 			rx_status->he_gi = NL80211_RATE_INFO_HE_GI_3_2;

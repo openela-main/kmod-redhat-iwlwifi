@@ -1,0 +1,35 @@
+From 009083504f40025e38bcbbd25ccd17c206c23e40 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:53:49 +0200
+Subject: [PATCH 39/43] Revert "iwlwifi: mvm: add bss color to radiotap"
+
+This reverts commit bd6fc6552b053fcb7bef8c1665adb8011d2b7eaa.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 14 --------------
+ 1 file changed, 14 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:46.907274064 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:47.083271819 +0200
+@@ -1091,20 +1091,6 @@
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_PUNC_FROM_SIG_A_BW);
+ 	}
+-
+-	if (he_phy_data != HE_PHY_DATA_INVAL &&
+-	    (he_type == RATE_MCS_HE_TYPE_SU ||
+-	     he_type == RATE_MCS_HE_TYPE_MU)) {
+-		u8 bss_color = FIELD_GET(IWL_RX_HE_PHY_BSS_COLOR_MASK,
+-					 he_phy_data);
+-
+-		if (bss_color) {
+-			he->data1 |=
+-				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_BSS_COLOR_KNOWN);
+-			he->data3 |= cpu_to_le16(bss_color);
+-		}
+-	}
+-
+ 	rx_status->device_timestamp = gp2_on_air_rise;
+ 	rx_status->band = channel > 14 ? NL80211_BAND_5GHZ :
+ 		NL80211_BAND_2GHZ;

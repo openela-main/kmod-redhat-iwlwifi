@@ -1,0 +1,262 @@
+From 25fcfd03d3382e76ec0f7ababb9176ed3ccff37a Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 02:16:05 +0200
+Subject: [PATCH 3/4] Revert "iwlwifi: mvm: handle RX no data notification"
+
+This reverts commit bf9dfedaad9e65f2f580d3a573401d521d48b932.
+---
+ .../net/wireless/intel/iwlwifi/fw/api/datapath.h   |   5 -
+ drivers/net/wireless/intel/iwlwifi/fw/api/rx.h     |  49 --------
+ drivers/net/wireless/intel/iwlwifi/mvm/mvm.h       |   2 -
+ drivers/net/wireless/intel/iwlwifi/mvm/ops.c       |   2 -
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c      | 128 +--------------------
+ 5 files changed, 1 insertion(+), 185 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/datapath.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/datapath.h	2019-09-06 15:31:57.823938961 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/datapath.h	2019-09-06 15:31:58.340930764 +0200
+@@ -105,11 +105,6 @@
+ 	HE_AIR_SNIFFER_CONFIG_CMD = 0x13,
+ 
+ 	/**
+-	 * @RX_NO_DATA_NOTIF: &struct iwl_rx_no_data
+-	 */
+-	RX_NO_DATA_NOTIF = 0xF5,
+-
+-	/**
+ 	 * @TLC_MNG_UPDATE_NOTIF: &struct iwl_tlc_update_notif
+ 	 */
+ 	TLC_MNG_UPDATE_NOTIF = 0xF7,
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 15:31:58.160933618 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 15:31:58.340930764 +0200
+@@ -483,55 +483,6 @@
+ 	};
+ } __packed;
+ 
+-#define RX_NO_DATA_CHAIN_A_POS		0
+-#define RX_NO_DATA_CHAIN_A_MSK		(0xff << RX_NO_DATA_CHAIN_A_POS)
+-#define RX_NO_DATA_CHAIN_B_POS		8
+-#define RX_NO_DATA_CHAIN_B_MSK		(0xff << RX_NO_DATA_CHAIN_B_POS)
+-#define RX_NO_DATA_CHANNEL_POS		16
+-#define RX_NO_DATA_CHANNEL_MSK		(0xff << RX_NO_DATA_CHANNEL_POS)
+-
+-#define RX_NO_DATA_INFO_TYPE_POS	0
+-#define RX_NO_DATA_INFO_TYPE_MSK	(0xff << RX_NO_DATA_INFO_TYPE_POS)
+-#define RX_NO_DATA_INFO_TYPE_NONE	0
+-#define RX_NO_DATA_INFO_TYPE_RX_ERR	1
+-#define RX_NO_DATA_INFO_TYPE_NDP	2
+-#define RX_NO_DATA_INFO_TYPE_MU_UNMATCHED	3
+-#define RX_NO_DATA_INFO_TYPE_HE_TB_UNMATCHED	4
+-
+-#define RX_NO_DATA_INFO_ERR_POS		8
+-#define RX_NO_DATA_INFO_ERR_MSK		(0xff << RX_NO_DATA_INFO_ERR_POS)
+-#define RX_NO_DATA_INFO_ERR_NONE	0
+-#define RX_NO_DATA_INFO_ERR_BAD_PLCP	1
+-#define RX_NO_DATA_INFO_ERR_UNSUPPORTED_RATE	2
+-#define RX_NO_DATA_INFO_ERR_NO_DELIM		3
+-#define RX_NO_DATA_INFO_ERR_BAD_MAC_HDR	4
+-
+-#define RX_NO_DATA_FRAME_TIME_POS	0
+-#define RX_NO_DATA_FRAME_TIME_MSK	(0xfffff << RX_NO_DATA_FRAME_TIME_POS)
+-
+-/**
+- * struct iwl_rx_no_data - RX no data descriptor
+- * @info: 7:0 frame type, 15:8 RX error type
+- * @rssi: 7:0 energy chain-A,
+- *	15:8 chain-B, measured at FINA time (FINA_ENERGY), 16:23 channel
+- * @on_air_rise_time: GP2 during on air rise
+- * @fr_time: frame time
+- * @rate: rate/mcs of frame
+- * @phy_info: &enum iwl_rx_phy_data0 and &enum iwl_rx_phy_info_type
+- * @rx_vec: DW-12:9 raw RX vectors from DSP according to modulation type.
+- *	for VHT: OFDM_RX_VECTOR_SIGA1_OUT, OFDM_RX_VECTOR_SIGA2_OUT
+- *	for HE: OFDM_RX_VECTOR_HE_SIGA1_OUT, OFDM_RX_VECTOR_HE_SIGA2_OUT
+- */
+-struct iwl_rx_no_data {
+-	__le32 info;
+-	__le32 rssi;
+-	__le32 on_air_rise_time;
+-	__le32 fr_time;
+-	__le32 rate;
+-	__le32 phy_info[2];
+-	__le32 rx_vec[3];
+-} __packed; /* RX_NO_DATA_NTFY_API_S_VER_1 */
+-
+ struct iwl_frame_release {
+ 	u8 baid;
+ 	u8 reserved;
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 15:31:37.675258420 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 15:31:58.340930764 +0200
+@@ -1598,8 +1598,6 @@
+ 			struct iwl_rx_cmd_buffer *rxb);
+ void iwl_mvm_rx_mpdu_mq(struct iwl_mvm *mvm, struct napi_struct *napi,
+ 			struct iwl_rx_cmd_buffer *rxb, int queue);
+-void iwl_mvm_rx_monitor_ndp(struct iwl_mvm *mvm, struct napi_struct *napi,
+-			    struct iwl_rx_cmd_buffer *rxb, int queue);
+ void iwl_mvm_rx_frame_release(struct iwl_mvm *mvm, struct napi_struct *napi,
+ 			      struct iwl_rx_cmd_buffer *rxb, int queue);
+ int iwl_mvm_notify_rx_queue(struct iwl_mvm *mvm, u32 rxq_mask,
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/ops.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/ops.c	2019-09-06 15:31:57.825938929 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/ops.c	2019-09-06 15:31:58.340930764 +0200
+@@ -1078,8 +1078,6 @@
+ 		iwl_mvm_rx_queue_notif(mvm, rxb, 0);
+ 	else if (cmd == WIDE_ID(LEGACY_GROUP, FRAME_RELEASE))
+ 		iwl_mvm_rx_frame_release(mvm, napi, rxb, 0);
+-	else if (cmd == WIDE_ID(DATA_PATH_GROUP, RX_NO_DATA_NOTIF))
+-		iwl_mvm_rx_monitor_ndp(mvm, napi, rxb, 0);
+ 	else
+ 		iwl_mvm_rx_common(mvm, rxb, pkt);
+ }
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 15:31:58.160933618 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 15:31:58.341930748 +0200
+@@ -214,10 +214,7 @@
+ 					    struct sk_buff *skb, int queue,
+ 					    struct ieee80211_sta *sta)
+ {
+-	struct ieee80211_rx_status *rx_status = IEEE80211_SKB_RXCB(skb);
+-
+-	if (!(rx_status->flag & RX_FLAG_NO_PSDU) &&
+-	    iwl_mvm_check_pn(mvm, skb, queue, sta))
++	if (iwl_mvm_check_pn(mvm, skb, queue, sta))
+ 		kfree_skb(skb);
+ 	else
+ 		ieee80211_rx_napi(mvm->hw, sta, skb, napi);
+@@ -1140,129 +1137,6 @@
+ 	rcu_read_unlock();
+ }
+ 
+-void iwl_mvm_rx_monitor_ndp(struct iwl_mvm *mvm, struct napi_struct *napi,
+-			    struct iwl_rx_cmd_buffer *rxb, int queue)
+-{
+-	struct ieee80211_rx_status *rx_status;
+-	struct iwl_rx_packet *pkt = rxb_addr(rxb);
+-	struct iwl_rx_no_data *desc = (void *)pkt->data;
+-	u32 rate_n_flags = le32_to_cpu(desc->rate);
+-	u32 gp2_on_air_rise = le32_to_cpu(desc->on_air_rise_time);
+-	u32 rssi = le32_to_cpu(desc->rssi);
+-	u32 info_type = le32_to_cpu(desc->info) & RX_NO_DATA_INFO_TYPE_MSK;
+-	u16 phy_info = IWL_RX_MPDU_PHY_TSF_OVERLOAD;
+-	struct ieee80211_sta *sta = NULL;
+-	struct sk_buff *skb;
+-	u8 channel, energy_a, energy_b;
+-	struct iwl_mvm_rx_phy_data phy_data = {
+-		.d0 = desc->phy_info[0],
+-		.info_type = IWL_RX_PHY_INFO_TYPE_NONE,
+-	};
+-
+-	if (unlikely(test_bit(IWL_MVM_STATUS_IN_HW_RESTART, &mvm->status)))
+-		return;
+-
+-	/* Currently only NDP type is supported */
+-	if (info_type != RX_NO_DATA_INFO_TYPE_NDP)
+-		return;
+-
+-	energy_a = (rssi & RX_NO_DATA_CHAIN_A_MSK) >> RX_NO_DATA_CHAIN_A_POS;
+-	energy_b = (rssi & RX_NO_DATA_CHAIN_B_MSK) >> RX_NO_DATA_CHAIN_B_POS;
+-	channel = (rssi & RX_NO_DATA_CHANNEL_MSK) >> RX_NO_DATA_CHANNEL_POS;
+-
+-	phy_data.info_type =
+-		le32_get_bits(desc->phy_info[1],
+-			      IWL_RX_PHY_DATA1_INFO_TYPE_MASK);
+-
+-	/* Dont use dev_alloc_skb(), we'll have enough headroom once
+-	 * ieee80211_hdr pulled.
+-	 */
+-	skb = alloc_skb(128, GFP_ATOMIC);
+-	if (!skb) {
+-		IWL_ERR(mvm, "alloc_skb failed\n");
+-		return;
+-	}
+-
+-	rx_status = IEEE80211_SKB_RXCB(skb);
+-
+-	/* 0-length PSDU */
+-	rx_status->flag |= RX_FLAG_NO_PSDU;
+-	/* currently this is the only type for which we get this notif */
+-	rx_status->zero_length_psdu_type =
+-		IEEE80211_RADIOTAP_ZERO_LEN_PSDU_SOUNDING;
+-
+-	/* This may be overridden by iwl_mvm_rx_he() to HE_RU */
+-	switch (rate_n_flags & RATE_MCS_CHAN_WIDTH_MSK) {
+-	case RATE_MCS_CHAN_WIDTH_20:
+-		break;
+-	case RATE_MCS_CHAN_WIDTH_40:
+-		rx_status->bw = RATE_INFO_BW_40;
+-		break;
+-	case RATE_MCS_CHAN_WIDTH_80:
+-		rx_status->bw = RATE_INFO_BW_80;
+-		break;
+-	case RATE_MCS_CHAN_WIDTH_160:
+-		rx_status->bw = RATE_INFO_BW_160;
+-		break;
+-	}
+-
+-	if (rate_n_flags & RATE_MCS_HE_MSK)
+-		iwl_mvm_rx_he(mvm, skb, &phy_data, rate_n_flags,
+-			      phy_info, queue);
+-
+-	iwl_mvm_decode_lsig(skb, &phy_data);
+-
+-	rx_status->device_timestamp = gp2_on_air_rise;
+-	rx_status->band = channel > 14 ? NL80211_BAND_5GHZ :
+-		NL80211_BAND_2GHZ;
+-	rx_status->freq = ieee80211_channel_to_frequency(channel,
+-							 rx_status->band);
+-	iwl_mvm_get_signal_strength(mvm, rx_status, rate_n_flags, energy_a,
+-				    energy_b);
+-
+-	rcu_read_lock();
+-
+-	if (!(rate_n_flags & RATE_MCS_CCK_MSK) &&
+-	    rate_n_flags & RATE_MCS_SGI_MSK)
+-		rx_status->enc_flags |= RX_ENC_FLAG_SHORT_GI;
+-	if (rate_n_flags & RATE_HT_MCS_GF_MSK)
+-		rx_status->enc_flags |= RX_ENC_FLAG_HT_GF;
+-	if (rate_n_flags & RATE_MCS_LDPC_MSK)
+-		rx_status->enc_flags |= RX_ENC_FLAG_LDPC;
+-	if (rate_n_flags & RATE_MCS_HT_MSK) {
+-		u8 stbc = (rate_n_flags & RATE_MCS_STBC_MSK) >>
+-				RATE_MCS_STBC_POS;
+-		rx_status->encoding = RX_ENC_HT;
+-		rx_status->rate_idx = rate_n_flags & RATE_HT_MCS_INDEX_MSK;
+-		rx_status->enc_flags |= stbc << RX_ENC_FLAG_STBC_SHIFT;
+-	} else if (rate_n_flags & RATE_MCS_VHT_MSK) {
+-		u8 stbc = (rate_n_flags & RATE_MCS_STBC_MSK) >>
+-				RATE_MCS_STBC_POS;
+-		rx_status->nss =
+-			((rate_n_flags & RATE_VHT_MCS_NSS_MSK) >>
+-						RATE_VHT_MCS_NSS_POS) + 1;
+-		rx_status->rate_idx = rate_n_flags & RATE_VHT_MCS_RATE_CODE_MSK;
+-		rx_status->encoding = RX_ENC_VHT;
+-		rx_status->enc_flags |= stbc << RX_ENC_FLAG_STBC_SHIFT;
+-		if (rate_n_flags & RATE_MCS_BF_MSK)
+-			rx_status->enc_flags |= RX_ENC_FLAG_BF;
+-	} else if (!(rate_n_flags & RATE_MCS_HE_MSK)) {
+-		int rate = iwl_mvm_legacy_rate_to_mac80211_idx(rate_n_flags,
+-							       rx_status->band);
+-
+-		if (WARN(rate < 0 || rate > 0xFF,
+-			 "Invalid rate flags 0x%x, band %d,\n",
+-			 rate_n_flags, rx_status->band)) {
+-			kfree_skb(skb);
+-			goto out;
+-		}
+-		rx_status->rate_idx = rate;
+-	}
+-
+-	iwl_mvm_pass_packet_to_mac80211(mvm, napi, skb, queue, sta);
+-out:
+-	rcu_read_unlock();
+-}
+ void iwl_mvm_rx_frame_release(struct iwl_mvm *mvm, struct napi_struct *napi,
+ 			      struct iwl_rx_cmd_buffer *rxb, int queue)
+ {
