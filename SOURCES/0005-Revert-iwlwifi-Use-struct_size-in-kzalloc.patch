@@ -1,0 +1,51 @@
+From ba8ead2d7e896f57ea37bad77dd653cc0c7c81f1 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 11 Jul 2019 18:34:59 +0200
+Subject: [PATCH] Revert "iwlwifi: Use struct_size() in kzalloc"
+
+This reverts commit 78d722b1bdd96b31bbe886a2cb2e69ce7b350347.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c b/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+index 2a879e0b331f..f3ada226c008 100644
+--- a/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+@@ -1081,6 +1081,7 @@ iwl_parse_nvm_mcc_info(struct device *dev, const struct iwl_cfg *cfg,
+ 	u32 reg_rule_flags, prev_reg_rule_flags = 0;
+ 	const u16 *nvm_chan;
+ 	struct ieee80211_regdomain *regd, *copy_rd;
++	int size_of_regd, regd_to_copy;
+ 	struct ieee80211_reg_rule *rule;
+ 	struct regdb_ptrs *regdb_ptrs;
+ 	enum nl80211_band band;
+@@ -1110,7 +1111,11 @@ iwl_parse_nvm_mcc_info(struct device *dev, const struct iwl_cfg *cfg,
+ 		      num_of_ch);
+ 
+ 	/* build a regdomain rule for every valid channel */
+-	regd = kzalloc(struct_size(regd, reg_rules, num_of_ch), GFP_KERNEL);
++	size_of_regd =
++		sizeof(struct ieee80211_regdomain) +
++		num_of_ch * sizeof(struct ieee80211_reg_rule);
++
++	regd = kzalloc(size_of_regd, GFP_KERNEL);
+ 	if (!regd)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -1186,8 +1191,10 @@ iwl_parse_nvm_mcc_info(struct device *dev, const struct iwl_cfg *cfg,
+ 	 * Narrow down regdom for unused regulatory rules to prevent hole
+ 	 * between reg rules to wmm rules.
+ 	 */
+-	copy_rd = kmemdup(regd, struct_size(regd, reg_rules, valid_rules),
+-			  GFP_KERNEL);
++	regd_to_copy = sizeof(struct ieee80211_regdomain) +
++		valid_rules * sizeof(struct ieee80211_reg_rule);
++
++	copy_rd = kmemdup(regd, regd_to_copy, GFP_KERNEL);
+ 	if (!copy_rd) {
+ 		copy_rd = ERR_PTR(-ENOMEM);
+ 		goto out;
+-- 
+2.13.6
+

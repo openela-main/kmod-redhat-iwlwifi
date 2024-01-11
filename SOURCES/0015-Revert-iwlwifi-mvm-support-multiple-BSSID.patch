@@ -1,0 +1,45 @@
+From c852a74acaa2d2595752b5110c9e49ce49fc137e Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 25 Jul 2019 14:49:22 +0200
+Subject: [PATCH 2/3] Revert "iwlwifi: mvm: support multiple BSSID"
+
+This reverts commit 918cbf39ac008b8079748a04be69930068c7c7c5.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-07-25 14:52:00.109779849 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-07-25 14:52:10.765633766 +0200
+@@ -397,7 +397,6 @@
+ 
+ const static u8 he_if_types_ext_capa_sta[] = {
+ 	 [0] = WLAN_EXT_CAPA1_EXT_CHANNEL_SWITCHING,
+-	 [2] = WLAN_EXT_CAPA3_MULTI_BSSID_SUPPORT,
+ 	 [7] = WLAN_EXT_CAPA8_OPMODE_NOTIF,
+ 	 [9] = WLAN_EXT_CAPA10_TWT_REQUESTER_SUPPORT,
+ };
+@@ -706,9 +705,6 @@
+ 		hw->wiphy->iftype_ext_capab = he_iftypes_ext_capa;
+ 		hw->wiphy->num_iftype_ext_capab =
+ 			ARRAY_SIZE(he_iftypes_ext_capa);
+-
+-		ieee80211_hw_set(hw, SUPPORTS_MULTI_BSSID);
+-		ieee80211_hw_set(hw, SUPPORTS_ONLY_HE_MULTI_BSSID);
+ 	}
+ 
+ 	mvm->rts_threshold = IEEE80211_MAX_RTS_THRESHOLD;
+@@ -2363,11 +2359,7 @@
+ 			(vif->bss_conf.uora_ocw_range >> 3) & 0x7;
+ 	}
+ 
+-	if (vif->bss_conf.nontransmitted) {
+-		flags |= STA_CTXT_HE_REF_BSSID_VALID;
+-		ether_addr_copy(sta_ctxt_cmd.ref_bssid_addr,
+-				vif->bss_conf.transmitter_bssid);
+-	}
++	/* TODO: support Multi BSSID IE */
+ 
+ 	sta_ctxt_cmd.flags = cpu_to_le32(flags);
+ 

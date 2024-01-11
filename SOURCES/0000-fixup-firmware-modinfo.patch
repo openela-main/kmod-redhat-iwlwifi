@@ -1,0 +1,193 @@
+Index: src/drivers/net/wireless/intel/iwlwifi/cfg/22000.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/cfg/22000.c	2019-09-11 11:44:00.988069947 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/cfg/22000.c	2019-09-18 19:31:28.670553012 +0200
+@@ -123,6 +123,37 @@
+ #define IWL_22000_TY_A_GF_A_MODULE_FIRMWARE(api) \
+ 	IWL_22000_TY_A_GF_A_FW_PRE __stringify(api) ".ucode"
+ 
++#define IWL_22000_HR_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_HR_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_JF_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_JF_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_HR_A_F0_QNJ_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_HR_A_F0_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_HR_B_F0_QNJ_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_HR_B_F0_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_QU_B_HR_B_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_QU_B_HR_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_HR_B_QNJ_MODULE_FIRMWARE_DUP(api)	\
++	"iwlwifi_dup8.0/" IWL_22000_HR_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_HR_A0_QNJ_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_HR_A0_FW_PRE __stringify(api) ".ucode"
++#define IWL_QUZ_A_HR_B_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_QUZ_A_HR_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_QU_B_JF_B_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_QU_B_JF_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_QNJ_B_JF_B_MODULE_FIRMWARE_DUP(api)		\
++	"iwlwifi_dup8.0/" IWL_QNJ_B_JF_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_CC_A_MODULE_FIRMWARE_DUP(api)			\
++	"iwlwifi_dup8.0/" IWL_CC_A_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_SO_A_JF_B_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_SO_A_JF_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_SO_A_HR_B_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_SO_A_HR_B_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_SO_A_GF_A_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_SO_A_GF_A_FW_PRE __stringify(api) ".ucode"
++#define IWL_22000_TY_A_GF_A_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL_22000_TY_A_GF_A_FW_PRE __stringify(api) ".ucode"
++
+ static const struct iwl_base_params iwl_22000_base_params = {
+ 	.eeprom_size = OTP_LOW_IMAGE_SIZE_32K,
+ 	.num_of_queues = 512,
+@@ -463,3 +494,21 @@
+ MODULE_FIRMWARE(IWL_22000_SO_A_HR_B_MODULE_FIRMWARE(IWL_22000_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL_22000_SO_A_GF_A_MODULE_FIRMWARE(IWL_22000_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL_22000_TY_A_GF_A_MODULE_FIRMWARE(IWL_22000_UCODE_API_MAX));
++
++MODULE_FIRMWARE(IWL_22000_HR_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_JF_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_HR_A_F0_QNJ_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_HR_B_F0_QNJ_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_HR_B_QNJ_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_HR_A0_QNJ_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_QU_B_JF_B_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_QUZ_A_HR_B_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_QNJ_B_JF_B_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_CC_A_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_SO_A_JF_B_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_SO_A_HR_B_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_SO_A_GF_A_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL_22000_TY_A_GF_A_MODULE_FIRMWARE_DUP(IWL_22000_UCODE_API_MAX));
++
++/* This is the API version shipped in the DUP firmware package */
++MODULE_FIRMWARE(IWL_CC_A_MODULE_FIRMWARE_DUP(46));
+Index: src/drivers/net/wireless/intel/iwlwifi/cfg/7000.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/cfg/7000.c	2019-09-11 11:42:01.185512147 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/cfg/7000.c	2019-09-18 19:41:05.379265522 +0200
+@@ -94,18 +94,23 @@
+ 
+ #define IWL7260_FW_PRE "iwlwifi-7260-"
+ #define IWL7260_MODULE_FIRMWARE(api) IWL7260_FW_PRE __stringify(api) ".ucode"
++#define IWL7260_MODULE_FIRMWARE_DUP(api) "iwlwifi_dup8.0/" IWL7260_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL3160_FW_PRE "iwlwifi-3160-"
+ #define IWL3160_MODULE_FIRMWARE(api) IWL3160_FW_PRE __stringify(api) ".ucode"
++#define IWL3160_MODULE_FIRMWARE_DUP(api) "iwlwifi_dup8.0/" IWL3160_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL3168_FW_PRE "iwlwifi-3168-"
+ #define IWL3168_MODULE_FIRMWARE(api) IWL3168_FW_PRE __stringify(api) ".ucode"
++#define IWL3168_MODULE_FIRMWARE_DUP(api) "iwlwifi_dup8.0/" IWL3168_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL7265_FW_PRE "iwlwifi-7265-"
+ #define IWL7265_MODULE_FIRMWARE(api) IWL7265_FW_PRE __stringify(api) ".ucode"
++#define IWL7265_MODULE_FIRMWARE_DUP(api) "iwlwifi_dup8.0/" IWL7265_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL7265D_FW_PRE "iwlwifi-7265D-"
+ #define IWL7265D_MODULE_FIRMWARE(api) IWL7265D_FW_PRE __stringify(api) ".ucode"
++#define IWL7265D_MODULE_FIRMWARE_DUP(api) "iwlwifi_dup8.0/" IWL7265D_FW_PRE __stringify(api) ".ucode"
+ 
+ static const struct iwl_base_params iwl7000_base_params = {
+ 	.eeprom_size = OTP_LOW_IMAGE_SIZE_16K,
+@@ -356,3 +361,22 @@
+ MODULE_FIRMWARE(IWL3168_MODULE_FIRMWARE(IWL3168_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL7265_MODULE_FIRMWARE(IWL7265_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL7265D_MODULE_FIRMWARE(IWL7265D_UCODE_API_MAX));
++
++MODULE_FIRMWARE(IWL7260_MODULE_FIRMWARE_DUP(IWL7260_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL3160_MODULE_FIRMWARE_DUP(IWL7260_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL3168_MODULE_FIRMWARE_DUP(IWL3168_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL7265_MODULE_FIRMWARE_DUP(IWL7265_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL7265D_MODULE_FIRMWARE_DUP(IWL7265D_UCODE_API_MAX));
++
++/* Those are API versions shipped in the DUP firmware package */
++MODULE_FIRMWARE(IWL7260_MODULE_FIRMWARE_DUP(16));
++
++MODULE_FIRMWARE(IWL3160_MODULE_FIRMWARE_DUP(16));
++
++MODULE_FIRMWARE(IWL3168_MODULE_FIRMWARE_DUP(22));
++MODULE_FIRMWARE(IWL3168_MODULE_FIRMWARE_DUP(27));
++
++MODULE_FIRMWARE(IWL7265_MODULE_FIRMWARE_DUP(16));
++
++MODULE_FIRMWARE(IWL7265D_MODULE_FIRMWARE_DUP(22));
++MODULE_FIRMWARE(IWL7265D_MODULE_FIRMWARE_DUP(27));
+Index: src/drivers/net/wireless/intel/iwlwifi/cfg/9000.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/cfg/9000.c	2019-09-11 11:42:01.185512147 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/cfg/9000.c	2019-09-18 19:42:56.264864334 +0200
+@@ -80,6 +80,11 @@
+ #define IWL9260_MODULE_FIRMWARE(api) \
+ 	IWL9260_FW_PRE __stringify(api) ".ucode"
+ 
++#define IWL9000_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL9000_FW_PRE __stringify(api) ".ucode"
++#define IWL9260_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL9260_FW_PRE __stringify(api) ".ucode"
++
+ static const struct iwl_base_params iwl9000_base_params = {
+ 	.eeprom_size = OTP_LOW_IMAGE_SIZE_32K,
+ 	.num_of_queues = 31,
+@@ -324,3 +329,22 @@
+ 
+ MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE(IWL9000_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE(IWL9000_UCODE_API_MAX));
++
++MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE_DUP(IWL9000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE_DUP(IWL9000_UCODE_API_MAX));
++
++/* Those are the API versions shipped in the DUP firmware package */
++MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE_DUP(33));
++MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE_DUP(33));
++
++MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE_DUP(34));
++MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE_DUP(34));
++
++MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE_DUP(38));
++MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE_DUP(38));
++
++MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE_DUP(41));
++MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE_DUP(41));
++
++MODULE_FIRMWARE(IWL9000_MODULE_FIRMWARE_DUP(43));
++MODULE_FIRMWARE(IWL9260_MODULE_FIRMWARE_DUP(43));
+Index: src/drivers/net/wireless/intel/iwlwifi/cfg/8000.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/cfg/8000.c	2019-09-11 11:42:01.185512147 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/cfg/8000.c	2019-09-18 19:37:07.172275588 +0200
+@@ -87,10 +87,14 @@
+ #define IWL8000_FW_PRE "iwlwifi-8000C-"
+ #define IWL8000_MODULE_FIRMWARE(api) \
+ 	IWL8000_FW_PRE __stringify(api) ".ucode"
++#define IWL8000_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL8000_FW_PRE __stringify(api) ".ucode"
+ 
+ #define IWL8265_FW_PRE "iwlwifi-8265-"
+ #define IWL8265_MODULE_FIRMWARE(api) \
+ 	IWL8265_FW_PRE __stringify(api) ".ucode"
++#define IWL8265_MODULE_FIRMWARE_DUP(api) \
++	"iwlwifi_dup8.0/" IWL8265_FW_PRE __stringify(api) ".ucode"
+ 
+ #define DEFAULT_NVM_FILE_FAMILY_8000C		"nvmData-8000C"
+ 
+@@ -217,3 +221,19 @@
+ 
+ MODULE_FIRMWARE(IWL8000_MODULE_FIRMWARE(IWL8000_UCODE_API_MAX));
+ MODULE_FIRMWARE(IWL8265_MODULE_FIRMWARE(IWL8265_UCODE_API_MAX));
++
++MODULE_FIRMWARE(IWL8000_MODULE_FIRMWARE_DUP(IWL8000_UCODE_API_MAX));
++MODULE_FIRMWARE(IWL8265_MODULE_FIRMWARE_DUP(IWL8265_UCODE_API_MAX));
++
++/* Those are API versions shipped with the DUP firmware package */
++MODULE_FIRMWARE(IWL8000_MODULE_FIRMWARE_DUP(22));
++MODULE_FIRMWARE(IWL8265_MODULE_FIRMWARE_DUP(22));
++
++MODULE_FIRMWARE(IWL8000_MODULE_FIRMWARE_DUP(27));
++MODULE_FIRMWARE(IWL8265_MODULE_FIRMWARE_DUP(27));
++
++MODULE_FIRMWARE(IWL8000_MODULE_FIRMWARE_DUP(31));
++MODULE_FIRMWARE(IWL8265_MODULE_FIRMWARE_DUP(31));
++
++MODULE_FIRMWARE(IWL8000_MODULE_FIRMWARE_DUP(34));
++MODULE_FIRMWARE(IWL8265_MODULE_FIRMWARE_DUP(34));

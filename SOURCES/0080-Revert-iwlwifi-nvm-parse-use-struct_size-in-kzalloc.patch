@@ -1,0 +1,48 @@
+From 2d91368aef2a73d37acdea30cd7086356e81ccc5 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:50:55 +0200
+Subject: [PATCH 1/7] Revert "iwlwifi: nvm-parse: use struct_size() in
+ kzalloc()"
+
+This reverts commit 6b367c9f88b0813f6a557e688b665324499a159e.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:47:45.924301459 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:54:58.093737377 +0200
+@@ -748,13 +748,15 @@
+ 	const __le16 *ch_section;
+ 
+ 	if (cfg->nvm_type != IWL_NVM_EXT)
+-		data = kzalloc(struct_size(data, channels,
+-					   IWL_NVM_NUM_CHANNELS),
+-					   GFP_KERNEL);
++		data = kzalloc(sizeof(*data) +
++			       sizeof(struct ieee80211_channel) *
++			       IWL_NVM_NUM_CHANNELS,
++			       GFP_KERNEL);
+ 	else
+-		data = kzalloc(struct_size(data, channels,
+-					   IWL_NVM_NUM_CHANNELS_EXT),
+-					   GFP_KERNEL);
++		data = kzalloc(sizeof(*data) +
++			       sizeof(struct ieee80211_channel) *
++			       IWL_NVM_NUM_CHANNELS_EXT,
++			       GFP_KERNEL);
+ 	if (!data)
+ 		return NULL;
+ 
+@@ -1256,7 +1258,9 @@
+ 	if (empty_otp)
+ 		IWL_INFO(trans, "OTP is empty\n");
+ 
+-	nvm = kzalloc(struct_size(nvm, channels, IWL_NUM_CHANNELS), GFP_KERNEL);
++	nvm = kzalloc(sizeof(*nvm) +
++		      sizeof(struct ieee80211_channel) * IWL_NUM_CHANNELS,
++		      GFP_KERNEL);
+ 	if (!nvm) {
+ 		ret = -ENOMEM;
+ 		goto out;

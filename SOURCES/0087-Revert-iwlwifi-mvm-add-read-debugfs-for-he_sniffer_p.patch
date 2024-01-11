@@ -1,0 +1,95 @@
+From 2cc08d0bf6d1a756ba1484b7f4fff97328034ccc Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 02:08:03 +0200
+Subject: [PATCH 3/7] Revert "iwlwifi: mvm: add read debugfs for
+ he_sniffer_params"
+
+This reverts commit 8bf52e0ab3d6c4c64295250382fcff2d9d3fed6a.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c | 25 ++----------------------
+ drivers/net/wireless/intel/iwlwifi/mvm/mvm.h     |  1 -
+ 2 files changed, 2 insertions(+), 24 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-06 02:01:40.436557307 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-06 02:17:21.739438249 +0200
+@@ -1783,7 +1783,6 @@
+ 
+ struct iwl_mvm_sniffer_apply {
+ 	struct iwl_mvm *mvm;
+-	u8 *bssid;
+ 	u16 aid;
+ };
+ 
+@@ -1793,8 +1792,6 @@
+ 	struct iwl_mvm_sniffer_apply *apply = data;
+ 
+ 	apply->mvm->cur_aid = cpu_to_le16(apply->aid);
+-	memcpy(apply->mvm->cur_bssid, apply->bssid,
+-	       sizeof(apply->mvm->cur_bssid));
+ 
+ 	return true;
+ }
+@@ -1827,7 +1824,6 @@
+ 	he_mon_cmd.aid = cpu_to_le16(aid);
+ 
+ 	apply.aid = aid;
+-	apply.bssid = (void *)he_mon_cmd.bssid;
+ 
+ 	mutex_lock(&mvm->mutex);
+ 
+@@ -1857,23 +1853,6 @@
+ }
+ 
+ static ssize_t
+-iwl_dbgfs_he_sniffer_params_read(struct file *file, char __user *user_buf,
+-				 size_t count, loff_t *ppos)
+-{
+-	struct iwl_mvm *mvm = file->private_data;
+-	u8 buf[32];
+-	int len;
+-
+-	len = scnprintf(buf, sizeof(buf),
+-			"%d %02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx\n",
+-			le16_to_cpu(mvm->cur_aid), mvm->cur_bssid[0],
+-			mvm->cur_bssid[1], mvm->cur_bssid[2], mvm->cur_bssid[3],
+-			mvm->cur_bssid[4], mvm->cur_bssid[5]);
+-
+-	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+-}
+-
+-static ssize_t
+ iwl_dbgfs_uapsd_noagg_bssids_read(struct file *file, char __user *user_buf,
+ 				  size_t count, loff_t *ppos)
+ {
+@@ -1943,7 +1922,7 @@
+ MVM_DEBUGFS_READ_FILE_OPS(sar_geo_profile);
+ #endif
+ 
+-MVM_DEBUGFS_READ_WRITE_FILE_OPS(he_sniffer_params, 32);
++MVM_DEBUGFS_WRITE_FILE_OPS(he_sniffer_params, 32);
+ 
+ static ssize_t iwl_dbgfs_mem_read(struct file *file, char __user *user_buf,
+ 				  size_t count, loff_t *ppos)
+@@ -2130,7 +2109,7 @@
+ #ifdef CONFIG_ACPI
+ 	MVM_DEBUGFS_ADD_FILE(sar_geo_profile, dbgfs_dir, 0400);
+ #endif
+-	MVM_DEBUGFS_ADD_FILE(he_sniffer_params, mvm->debugfs_dir, 0600);
++	MVM_DEBUGFS_ADD_FILE(he_sniffer_params, mvm->debugfs_dir, 0200);
+ 
+ 	debugfs_create_bool("enable_scan_iteration_notif", 0600,
+ 			    mvm->debugfs_dir, &mvm->scan_iter_notif_enabled);
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 02:01:40.729553534 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-06 02:17:21.740438236 +0200
+@@ -1135,7 +1135,6 @@
+ 
+ 	/* sniffer data to include in radiotap */
+ 	__le16 cur_aid;
+-	u8 cur_bssid[ETH_ALEN];
+ 
+ #ifdef CONFIG_ACPI
+ 	struct iwl_mvm_sar_profile sar_profiles[ACPI_SAR_PROFILE_NUM];

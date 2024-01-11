@@ -1,0 +1,45 @@
+From d48db5470be29664cb44b51e822a55c1b4aae61f Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 1 Aug 2019 14:14:21 +0200
+Subject: [PATCH 3/4] Revert "iwlwifi: mvm: config mac ctxt to HE before TLC"
+
+This reverts commit 95dd8ac154b48451e3ce926cd3af4c7eb42b781e.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c | 3 ++-
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 4 ----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-07-31 18:53:33.747919402 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-08-01 14:25:56.840586377 +0200
+@@ -776,7 +776,8 @@
+ 	if (vif->probe_req_reg && vif->bss_conf.assoc && vif->p2p)
+ 		cmd.filter_flags |= cpu_to_le32(MAC_FILTER_IN_PROBE_REQUEST);
+ 
+-	if (vif->bss_conf.he_support && !iwlwifi_mod_params.disable_11ax) {
++	if (vif->bss_conf.assoc && vif->bss_conf.he_support &&
++	    !iwlwifi_mod_params.disable_11ax) {
+ 		cmd.filter_flags |= cpu_to_le32(MAC_FILTER_IN_11AX);
+ 		if (vif->bss_conf.twt_requester)
+ 			ctxt_sta->data_policy |= cpu_to_le32(TWT_SUPPORTED);
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-08-01 14:25:51.083659124 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-08-01 14:25:56.841586365 +0200
+@@ -3100,15 +3100,11 @@
+ 	} else if (old_state == IEEE80211_STA_AUTH &&
+ 		   new_state == IEEE80211_STA_ASSOC) {
+ 		if (vif->type == NL80211_IFTYPE_AP) {
+-			vif->bss_conf.he_support = sta->he_cap.has_he;
+ 			mvmvif->ap_assoc_sta_count++;
+ 			iwl_mvm_mac_ctxt_changed(mvm, vif, false, NULL);
+ 			if (vif->bss_conf.he_support &&
+ 			    !iwlwifi_mod_params.disable_11ax)
+ 				iwl_mvm_cfg_he_sta(mvm, vif, mvm_sta->sta_id);
+-		} else if (vif->type == NL80211_IFTYPE_STATION) {
+-			vif->bss_conf.he_support = sta->he_cap.has_he;
+-			iwl_mvm_mac_ctxt_changed(mvm, vif, false, NULL);
+ 		}
+ 
+ 		iwl_mvm_rs_rate_init(mvm, sta, mvmvif->phy_ctxt->channel->band,

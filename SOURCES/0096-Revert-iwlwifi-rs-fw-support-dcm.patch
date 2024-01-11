@@ -1,0 +1,56 @@
+From 1f90d5a2b57beb17236e7a1ac70b43369c8b9b4d Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 15:41:00 +0200
+Subject: [PATCH 4/5] Revert "iwlwifi: rs-fw: support dcm"
+
+This reverts commit 423584dd8060a6d7e1b2fb71ad11025a64aa0bec.
+---
+ drivers/net/wireless/intel/iwlwifi/fw/api/rs.h |  8 --------
+ drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c | 10 ----------
+ 2 files changed, 18 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/rs.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/rs.h	2019-06-27 14:54:04.122678470 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/rs.h	2019-09-06 15:42:07.804267670 +0200
+@@ -71,19 +71,11 @@
+  * @IWL_TLC_MNG_CFG_FLAGS_LDPC_MSK: enable LDPC
+  * @IWL_TLC_MNG_CFG_FLAGS_HE_STBC_160MHZ_MSK: enable STBC in HE at 160MHz
+  *					      bandwidth
+- * @IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_1_MSK: enable HE Dual Carrier Modulation
+- *					    for BPSK (MCS 0) with 1 spatial
+- *					    stream
+- * @IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_2_MSK: enable HE Dual Carrier Modulation
+- *					    for BPSK (MCS 0) with 2 spatial
+- *					    streams
+  */
+ enum iwl_tlc_mng_cfg_flags {
+ 	IWL_TLC_MNG_CFG_FLAGS_STBC_MSK			= BIT(0),
+ 	IWL_TLC_MNG_CFG_FLAGS_LDPC_MSK			= BIT(1),
+ 	IWL_TLC_MNG_CFG_FLAGS_HE_STBC_160MHZ_MSK	= BIT(2),
+-	IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_1_MSK		= BIT(3),
+-	IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_2_MSK		= BIT(4),
+ };
+ 
+ /**
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 15:42:07.640270270 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 15:42:07.804267670 +0200
+@@ -143,16 +143,6 @@
+ 	     (vht_ena && (vht_cap->cap & IEEE80211_VHT_CAP_RXLDPC))))
+ 		flags |= IWL_TLC_MNG_CFG_FLAGS_LDPC_MSK;
+ 
+-	if (he_cap && he_cap->has_he &&
+-	    (he_cap->he_cap_elem.phy_cap_info[3] &
+-	     IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_TX_MASK)) {
+-		flags |= IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_1_MSK;
+-
+-		if (he_cap->he_cap_elem.phy_cap_info[3] &
+-		    IEEE80211_HE_PHY_CAP3_DCM_MAX_TX_NSS_2)
+-			flags |= IWL_TLC_MNG_CFG_FLAGS_HE_DCM_NSS_2_MSK;
+-	}
+-
+ 	return flags;
+ }
+ 

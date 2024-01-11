@@ -1,0 +1,503 @@
+From 90c061a4ac143f50225054e38f8a715e499312b7 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:13:04 +0200
+Subject: [PATCH 40/43] Revert "iwlwifi: support new rx_mpdu_desc api"
+
+This reverts commit 18ead597daa17a557249cf4b2f494361d836ed52.
+---
+ drivers/net/wireless/intel/iwlwifi/fw/api/rx.h   | 179 ++++++-----------------
+ drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c |   8 +-
+ drivers/net/wireless/intel/iwlwifi/mvm/ops.c     |   6 +-
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c    |  95 +++---------
+ 4 files changed, 71 insertions(+), 217 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 01:25:46.216282878 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/rx.h	2019-09-06 01:25:47.252269663 +0200
+@@ -375,94 +375,78 @@
+ };
+ 
+ /**
+- * struct iwl_rx_mpdu_desc_v1 - RX MPDU descriptor
++ * struct iwl_rx_mpdu_desc - RX MPDU descriptor
+  */
+-struct iwl_rx_mpdu_desc_v1 {
+-	/* DW7 - carries rss_hash only when rpa_en == 1 */
++struct iwl_rx_mpdu_desc {
++	/* DW2 */
+ 	/**
+-	 * @rss_hash: RSS hash value
++	 * @mpdu_len: MPDU length
+ 	 */
+-	__le32 rss_hash;
+-	/* DW8 - carries filter_match only when rpa_en == 1 */
++	__le16 mpdu_len;
+ 	/**
+-	 * @filter_match: filter match value
++	 * @mac_flags1: &enum iwl_rx_mpdu_mac_flags1
+ 	 */
+-	__le32 filter_match;
+-	/* DW9 */
++	u8 mac_flags1;
+ 	/**
+-	 * @rate_n_flags: RX rate/flags encoding
++	 * @mac_flags2: &enum iwl_rx_mpdu_mac_flags2
+ 	 */
+-	__le32 rate_n_flags;
+-	/* DW10 */
++	u8 mac_flags2;
++	/* DW3 */
+ 	/**
+-	 * @energy_a: energy chain A
++	 * @amsdu_info: &enum iwl_rx_mpdu_amsdu_info
+ 	 */
+-	u8 energy_a;
++	u8 amsdu_info;
+ 	/**
+-	 * @energy_b: energy chain B
++	 * @phy_info: &enum iwl_rx_mpdu_phy_info
+ 	 */
+-	u8 energy_b;
++	__le16 phy_info;
+ 	/**
+-	 * @channel: channel number
++	 * @mac_phy_idx: MAC/PHY index
+ 	 */
+-	u8 channel;
++	u8 mac_phy_idx;
++	/* DW4 - carries csum data only when rpa_en == 1 */
+ 	/**
+-	 * @mac_context: MAC context mask
++	 * @raw_csum: raw checksum (alledgedly unreliable)
+ 	 */
+-	u8 mac_context;
+-	/* DW11 */
++	__le16 raw_csum;
+ 	/**
+-	 * @gp2_on_air_rise: GP2 timer value on air rise (INA)
++	 * @l3l4_flags: &enum iwl_rx_l3l4_flags
+ 	 */
+-	__le32 gp2_on_air_rise;
+-	/* DW12 & DW13 */
+-	union {
+-		/**
+-		 * @tsf_on_air_rise:
+-		 * TSF value on air rise (INA), only valid if
+-		 * %IWL_RX_MPDU_PHY_TSF_OVERLOAD isn't set
+-		 */
+-		__le64 tsf_on_air_rise;
+-		/**
+-		 * @he_phy_data:
+-		 * HE PHY data, see &enum iwl_rx_he_phy, valid
+-		 * only if %IWL_RX_MPDU_PHY_TSF_OVERLOAD is set
+-		 */
+-		__le64 he_phy_data;
+-	};
+-} __packed;
+-
+-/**
+- * struct iwl_rx_mpdu_desc_v3 - RX MPDU descriptor
+- */
+-struct iwl_rx_mpdu_desc_v3 {
+-	/* DW7 - carries filter_match only when rpa_en == 1 */
++	__le16 l3l4_flags;
++	/* DW5 */
+ 	/**
+-	 * @filter_match: filter match value
++	 * @status: &enum iwl_rx_mpdu_status
+ 	 */
+-	__le32 filter_match;
+-	/* DW8 - carries rss_hash only when rpa_en == 1 */
++	__le16 status;
+ 	/**
+-	 * @rss_hash: RSS hash value
++	 * @hash_filter: hash filter value
+ 	 */
+-	__le32 rss_hash;
+-	/* DW9 */
++	u8 hash_filter;
+ 	/**
+-	 * @partial_hash: 31:0 ip/tcp header hash
+-	 *	w/o some fields (such as IP SRC addr)
++	 * @sta_id_flags: &enum iwl_rx_mpdu_sta_id_flags
+ 	 */
+-	__le32 partial_hash;
+-	/* DW10 */
++	u8 sta_id_flags;
++	/* DW6 */
+ 	/**
+-	 * @raw_xsum: raw xsum value
++	 * @reorder_data: &enum iwl_rx_mpdu_reorder_data
+ 	 */
+-	__le32 raw_xsum;
+-	/* DW11 */
++	__le32 reorder_data;
++	/* DW7 - carries rss_hash only when rpa_en == 1 */
++	/**
++	 * @rss_hash: RSS hash value
++	 */
++	__le32 rss_hash;
++	/* DW8 - carries filter_match only when rpa_en == 1 */
++	/**
++	 * @filter_match: filter match value
++	 */
++	__le32 filter_match;
++	/* DW9 */
+ 	/**
+ 	 * @rate_n_flags: RX rate/flags encoding
+ 	 */
+ 	__le32 rate_n_flags;
+-	/* DW12 */
++	/* DW10 */
+ 	/**
+ 	 * @energy_a: energy chain A
+ 	 */
+@@ -479,12 +463,12 @@
+ 	 * @mac_context: MAC context mask
+ 	 */
+ 	u8 mac_context;
+-	/* DW13 */
++	/* DW11 */
+ 	/**
+ 	 * @gp2_on_air_rise: GP2 timer value on air rise (INA)
+ 	 */
+ 	__le32 gp2_on_air_rise;
+-	/* DW14 & DW15 */
++	/* DW12 & DW13 */
+ 	union {
+ 		/**
+ 		 * @tsf_on_air_rise:
+@@ -499,78 +483,7 @@
+ 		 */
+ 		__le64 he_phy_data;
+ 	};
+-	/* DW16 & DW17 */
+-	/**
+-	 * @reserved: reserved
+-	 */
+-	__le32 reserved[2];
+-} __packed; /* RX_MPDU_RES_START_API_S_VER_3 */
+-
+-/**
+- * struct iwl_rx_mpdu_desc - RX MPDU descriptor
+- */
+-struct iwl_rx_mpdu_desc {
+-	/* DW2 */
+-	/**
+-	 * @mpdu_len: MPDU length
+-	 */
+-	__le16 mpdu_len;
+-	/**
+-	 * @mac_flags1: &enum iwl_rx_mpdu_mac_flags1
+-	 */
+-	u8 mac_flags1;
+-	/**
+-	 * @mac_flags2: &enum iwl_rx_mpdu_mac_flags2
+-	 */
+-	u8 mac_flags2;
+-	/* DW3 */
+-	/**
+-	 * @amsdu_info: &enum iwl_rx_mpdu_amsdu_info
+-	 */
+-	u8 amsdu_info;
+-	/**
+-	 * @phy_info: &enum iwl_rx_mpdu_phy_info
+-	 */
+-	__le16 phy_info;
+-	/**
+-	 * @mac_phy_idx: MAC/PHY index
+-	 */
+-	u8 mac_phy_idx;
+-	/* DW4 - carries csum data only when rpa_en == 1 */
+-	/**
+-	 * @raw_csum: raw checksum (alledgedly unreliable)
+-	 */
+-	__le16 raw_csum;
+-	/**
+-	 * @l3l4_flags: &enum iwl_rx_l3l4_flags
+-	 */
+-	__le16 l3l4_flags;
+-	/* DW5 */
+-	/**
+-	 * @status: &enum iwl_rx_mpdu_status
+-	 */
+-	__le16 status;
+-	/**
+-	 * @hash_filter: hash filter value
+-	 */
+-	u8 hash_filter;
+-	/**
+-	 * @sta_id_flags: &enum iwl_rx_mpdu_sta_id_flags
+-	 */
+-	u8 sta_id_flags;
+-	/* DW6 */
+-	/**
+-	 * @reorder_data: &enum iwl_rx_mpdu_reorder_data
+-	 */
+-	__le32 reorder_data;
+-
+-	union {
+-		struct iwl_rx_mpdu_desc_v1 v1;
+-		struct iwl_rx_mpdu_desc_v3 v3;
+-	};
+-} __packed; /* RX_MPDU_RES_START_API_S_VER_3 */
+-
+-#define IWL_RX_DESC_SIZE_V1 offsetofend(struct iwl_rx_mpdu_desc, v1)
++} __packed;
+ 
+ #define RX_NO_DATA_CHAIN_A_POS		0
+ #define RX_NO_DATA_CHAIN_A_MSK		(0xff << RX_NO_DATA_CHAIN_A_POS)
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-06-27 14:54:04.133678337 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-06 01:25:47.253269650 +0200
+@@ -1141,10 +1141,6 @@
+ 	struct iwl_rx_mpdu_desc *desc;
+ 	int bin_len = count / 2;
+ 	int ret = -EINVAL;
+-	size_t mpdu_cmd_hdr_size =
+-		(mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560) ?
+-		sizeof(struct iwl_rx_mpdu_desc) :
+-		IWL_RX_DESC_SIZE_V1;
+ 
+ 	if (!iwl_mvm_firmware_running(mvm))
+ 		return -EIO;
+@@ -1163,7 +1159,7 @@
+ 		goto out;
+ 
+ 	/* avoid invalid memory access */
+-	if (bin_len < sizeof(*pkt) + mpdu_cmd_hdr_size)
++	if (bin_len < sizeof(*pkt) + sizeof(*desc))
+ 		goto out;
+ 
+ 	/* check this is RX packet */
+@@ -1174,7 +1170,7 @@
+ 	/* check the length in metadata matches actual received length */
+ 	desc = (void *)pkt->data;
+ 	if (le16_to_cpu(desc->mpdu_len) !=
+-	    (bin_len - mpdu_cmd_hdr_size - sizeof(*pkt)))
++	    (bin_len - sizeof(*desc) - sizeof(*pkt)))
+ 		goto out;
+ 
+ 	local_bh_disable();
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/ops.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/ops.c	2019-09-06 01:25:41.666340915 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/ops.c	2019-09-06 01:25:47.253269650 +0200
+@@ -663,11 +663,7 @@
+ 
+ 	if (iwl_mvm_has_new_rx_api(mvm)) {
+ 		op_mode->ops = &iwl_mvm_ops_mq;
+-		trans->rx_mpdu_cmd_hdr_size =
+-			(trans->cfg->device_family >=
+-			 IWL_DEVICE_FAMILY_22560) ?
+-			sizeof(struct iwl_rx_mpdu_desc) :
+-			IWL_RX_DESC_SIZE_V1;
++		trans->rx_mpdu_cmd_hdr_size = sizeof(struct iwl_rx_mpdu_desc);
+ 	} else {
+ 		op_mode->ops = &iwl_mvm_ops;
+ 		trans->rx_mpdu_cmd_hdr_size =
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:47.083271819 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:47.254269638 +0200
+@@ -253,14 +253,15 @@
+ }
+ 
+ static void iwl_mvm_get_signal_strength(struct iwl_mvm *mvm,
+-					struct ieee80211_rx_status *rx_status,
+-					u32 rate_n_flags, int energy_a,
+-					int energy_b)
++					struct iwl_rx_mpdu_desc *desc,
++					struct ieee80211_rx_status *rx_status)
+ {
+-	int max_energy;
+-	u32 rate_flags = rate_n_flags;
++	int energy_a, energy_b, max_energy;
++	u32 rate_flags = le32_to_cpu(desc->rate_n_flags);
+ 
++	energy_a = desc->energy_a;
+ 	energy_a = energy_a ? -energy_a : S8_MIN;
++	energy_b = desc->energy_b;
+ 	energy_b = energy_b ? -energy_b : S8_MIN;
+ 	max_energy = max(energy_a, energy_b);
+ 
+@@ -412,8 +413,7 @@
+ 		tid = IWL_MAX_TID_COUNT;
+ 
+ 	/* If this wasn't a part of an A-MSDU the sub-frame index will be 0 */
+-	sub_frame_idx = desc->amsdu_info &
+-		IWL_RX_MPDU_AMSDU_SUBFRAME_IDX_MASK;
++	sub_frame_idx = desc->amsdu_info & IWL_RX_MPDU_AMSDU_SUBFRAME_IDX_MASK;
+ 
+ 	if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
+ 		     dup_data->last_seq[tid] == hdr->seq_ctrl &&
+@@ -909,42 +909,24 @@
+ 	struct ieee80211_rx_status *rx_status;
+ 	struct iwl_rx_packet *pkt = rxb_addr(rxb);
+ 	struct iwl_rx_mpdu_desc *desc = (void *)pkt->data;
+-	struct ieee80211_hdr *hdr;
++	struct ieee80211_hdr *hdr = (void *)(pkt->data + sizeof(*desc));
+ 	u32 len = le16_to_cpu(desc->mpdu_len);
+-	u32 rate_n_flags, gp2_on_air_rise;
++	u32 rate_n_flags = le32_to_cpu(desc->rate_n_flags);
+ 	u16 phy_info = le16_to_cpu(desc->phy_info);
+ 	struct ieee80211_sta *sta = NULL;
+ 	struct sk_buff *skb;
+-	u8 crypt_len = 0, channel, energy_a, energy_b;
++	u8 crypt_len = 0;
+ 	struct ieee80211_radiotap_he *he = NULL;
+ 	struct ieee80211_radiotap_he_mu *he_mu = NULL;
+ 	u32 he_type = 0xffffffff;
+ 	/* this is invalid e.g. because puncture type doesn't allow 0b11 */
+ #define HE_PHY_DATA_INVAL ((u64)-1)
+ 	u64 he_phy_data = HE_PHY_DATA_INVAL;
+-	size_t desc_size;
+ 	bool csi = false;
+ 
+ 	if (unlikely(test_bit(IWL_MVM_STATUS_IN_HW_RESTART, &mvm->status)))
+ 		return;
+ 
+-	if (mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560) {
+-		rate_n_flags = le32_to_cpu(desc->v3.rate_n_flags);
+-		channel = desc->v3.channel;
+-		gp2_on_air_rise = le32_to_cpu(desc->v3.gp2_on_air_rise);
+-		energy_a = desc->v3.energy_a;
+-		energy_b = desc->v3.energy_b;
+-		desc_size = sizeof(*desc);
+-	} else {
+-		rate_n_flags = le32_to_cpu(desc->v1.rate_n_flags);
+-		channel = desc->v1.channel;
+-		gp2_on_air_rise = le32_to_cpu(desc->v1.gp2_on_air_rise);
+-		energy_a = desc->v1.energy_a;
+-		energy_b = desc->v1.energy_b;
+-		desc_size = IWL_RX_DESC_SIZE_V1;
+-	}
+-
+-	hdr = (void *)(pkt->data + desc_size);
+ 	/* Dont use dev_alloc_skb(), we'll have enough headroom once
+ 	 * ieee80211_hdr pulled.
+ 	 */
+@@ -991,11 +973,8 @@
+ 		he_type = rate_n_flags & RATE_MCS_HE_TYPE_MSK;
+ 
+ 		if (phy_info & IWL_RX_MPDU_PHY_TSF_OVERLOAD) {
+-			if (mvm->trans->cfg->device_family >=
+-			    IWL_DEVICE_FAMILY_22560)
+-				he_phy_data = le64_to_cpu(desc->v3.he_phy_data);
+-			else
+-				he_phy_data = le64_to_cpu(desc->v1.he_phy_data);
++			he_phy_data =
++				le64_to_cpu(desc->he_phy_data);
+ 
+ 			if (he_type == RATE_MCS_HE_TYPE_MU) {
+ 				he_mu = skb_put_data(skb, &mu_known,
+@@ -1009,8 +988,6 @@
+ 		__skb_pull(skb, radiotap_len);
+ 	}
+ 
+-	rx_status = IEEE80211_SKB_RXCB(skb);
+-
+ 	if (iwl_mvm_rx_crypto(mvm, hdr, rx_status, phy_info, desc,
+ 			      le32_to_cpu(pkt->len_n_flags), queue,
+ 			      &crypt_len)) {
+@@ -1034,28 +1011,14 @@
+ 		rx_status->enc_flags |= RX_ENC_FLAG_SHORTPRE;
+ 
+ 	if (likely(!(phy_info & IWL_RX_MPDU_PHY_TSF_OVERLOAD))) {
+-		u64 tsf_on_air_rise;
+-
+-		if (mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560)
+-			tsf_on_air_rise = le64_to_cpu(desc->v3.tsf_on_air_rise);
+-		else
+-			tsf_on_air_rise = le64_to_cpu(desc->v1.tsf_on_air_rise);
+-
+-		rx_status->mactime = tsf_on_air_rise;
++		rx_status->mactime = le64_to_cpu(desc->tsf_on_air_rise);
+ 		/* TSF as indicated by the firmware is at INA time */
+ 		rx_status->flag |= RX_FLAG_MACTIME_PLCP_START;
+ 	} else if (he_type == RATE_MCS_HE_TYPE_SU) {
+-		u64 he_phy_data;
+-
+-		if (mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560)
+-			he_phy_data = le64_to_cpu(desc->v3.he_phy_data);
+-		else
+-			he_phy_data = le64_to_cpu(desc->v1.he_phy_data);
+-
+ 		he->data1 |=
+ 			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN);
+ 		if (FIELD_GET(IWL_RX_HE_PHY_UPLINK,
+-			      he_phy_data))
++			      le64_to_cpu(desc->he_phy_data)))
+ 			he->data3 |=
+ 				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA3_UL_DL);
+ 
+@@ -1066,7 +1029,7 @@
+ 			rx_status->flag |= RX_FLAG_AMPDU_DETAILS;
+ 			rx_status->flag |= RX_FLAG_AMPDU_EOF_BIT_KNOWN;
+ 			if (FIELD_GET(IWL_RX_HE_PHY_DELIM_EOF,
+-				      he_phy_data))
++				      le64_to_cpu(desc->he_phy_data)))
+ 				rx_status->flag |= RX_FLAG_AMPDU_EOF_BIT;
+ 		}
+ 	} else if (he_mu && he_phy_data != HE_PHY_DATA_INVAL) {
+@@ -1091,23 +1054,16 @@
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_MU_FLAGS2_PUNC_FROM_SIG_A_BW);
+ 	}
+-	rx_status->device_timestamp = gp2_on_air_rise;
+-	rx_status->band = channel > 14 ? NL80211_BAND_5GHZ :
+-		NL80211_BAND_2GHZ;
+-	rx_status->freq = ieee80211_channel_to_frequency(channel,
++	rx_status->device_timestamp = le32_to_cpu(desc->gp2_on_air_rise);
++	rx_status->band = desc->channel > 14 ? NL80211_BAND_5GHZ :
++					       NL80211_BAND_2GHZ;
++	rx_status->freq = ieee80211_channel_to_frequency(desc->channel,
+ 							 rx_status->band);
+-	iwl_mvm_get_signal_strength(mvm, rx_status, rate_n_flags, energy_a,
+-				    energy_b);
++	iwl_mvm_get_signal_strength(mvm, desc, rx_status);
+ 
+ 	/* update aggregation data for monitor sake on default queue */
+ 	if (!queue && (phy_info & IWL_RX_MPDU_PHY_AMPDU)) {
+ 		bool toggle_bit = phy_info & IWL_RX_MPDU_PHY_AMPDU_TOGGLE;
+-		u64 he_phy_data;
+-
+-		if (mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560)
+-			he_phy_data = le64_to_cpu(desc->v3.he_phy_data);
+-		else
+-			he_phy_data = le64_to_cpu(desc->v1.he_phy_data);
+ 
+ 		rx_status->flag |= RX_FLAG_AMPDU_DETAILS;
+ 		/*
+@@ -1125,7 +1081,7 @@
+ 			    he_type == RATE_MCS_HE_TYPE_MU) {
+ 				rx_status->flag |= RX_FLAG_AMPDU_EOF_BIT_KNOWN;
+ 				if (FIELD_GET(IWL_RX_HE_PHY_DELIM_EOF,
+-					      he_phy_data))
++					      le64_to_cpu(desc->he_phy_data)))
+ 					rx_status->flag |=
+ 						RX_FLAG_AMPDU_EOF_BIT;
+ 			}
+@@ -1425,19 +1381,12 @@
+ 			break;
+ 		case RATE_MCS_HE_TYPE_MU: {
+ 			u16 val;
+-			u64 he_phy_data;
+-
+-			if (mvm->trans->cfg->device_family >=
+-			    IWL_DEVICE_FAMILY_22560)
+-				he_phy_data = le64_to_cpu(desc->v3.he_phy_data);
+-			else
+-				he_phy_data = le64_to_cpu(desc->v1.he_phy_data);
+ 
+ 			if (he_phy_data == HE_PHY_DATA_INVAL)
+ 				break;
+ 
+ 			val = FIELD_GET(IWL_RX_HE_PHY_HE_LTF_NUM_MASK,
+-					he_phy_data);
++					le64_to_cpu(desc->he_phy_data));
+ 
+ 			he->data2 |=
+ 				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_NUM_LTF_SYMS_KNOWN);

@@ -1,0 +1,31 @@
+From 1151781dfad20d53bf37122d1043657ce6235a59 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 11 Jul 2019 18:29:15 +0200
+Subject: [PATCH] Revert "iwlwifi: mvm: fix merge damage in
+ iwl_mvm_vif_dbgfs_register()"
+
+This reverts commit d156e67d3f58c5d3c7ebe1bec80657db534f32d4.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/debugfs-vif.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/debugfs-vif.c b/drivers/net/wireless/intel/iwlwifi/mvm/debugfs-vif.c
+index f043eefabb4e..83118cb94882 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/debugfs-vif.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/debugfs-vif.c
+@@ -779,6 +779,12 @@ void iwl_mvm_vif_dbgfs_register(struct iwl_mvm *mvm, struct ieee80211_vif *vif)
+ 		return;
+ 	}
+ 
++	if (!mvmvif->dbgfs_dir) {
++		IWL_ERR(mvm, "Failed to create debugfs directory under %pd\n",
++			dbgfs_dir);
++		return;
++	}
++
+ 	if (iwlmvm_mod_params.power_scheme != IWL_POWER_SCHEME_CAM &&
+ 	    ((vif->type == NL80211_IFTYPE_STATION && !vif->p2p) ||
+ 	     (vif->type == NL80211_IFTYPE_STATION && vif->p2p)))
+-- 
+2.13.6
+

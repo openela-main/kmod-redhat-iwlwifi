@@ -1,0 +1,15 @@
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/tx.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/tx.c	2019-09-08 16:01:05.053436496 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/tx.c	2019-09-08 16:01:05.781427123 +0200
+@@ -870,10 +870,6 @@
+ 	    band == NL80211_BAND_5GHZ)
+ 		lmac = IWL_LMAC_5G_INDEX;
+ 
+-	/* For HE redirect to trigger based fifos */
+-	if (sta->he_cap.has_he && !WARN_ON(!iwl_mvm_has_new_tx_api(mvm)))
+-		ac += 4;
+-
+ 	txf = iwl_mvm_mac_ac_to_tx_fifo(mvm, ac);
+ 
+ 	/*

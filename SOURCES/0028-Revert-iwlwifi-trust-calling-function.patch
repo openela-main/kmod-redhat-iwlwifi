@@ -1,0 +1,31 @@
+From e7a8266afda457bb661675b67779a38731362c2c Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Mon, 5 Aug 2019 22:51:41 +0200
+Subject: [PATCH 1/2] Revert "iwlwifi: trust calling function"
+
+This reverts commit 5dcfcc01b7c686f509d214467a2ab0de08284551.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c b/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+index 290ef2726f47..6d14689b8ff6 100644
+--- a/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+@@ -665,7 +665,12 @@ static struct ieee80211_sband_iftype_data iwl_he_capa[] = {
+ static void iwl_init_he_hw_capab(struct ieee80211_supported_band *sband,
+ 				 u8 tx_chains, u8 rx_chains)
+ {
+-	sband->iftype_data = iwl_he_capa;
++	if (sband->band == NL80211_BAND_2GHZ ||
++	    sband->band == NL80211_BAND_5GHZ)
++		sband->iftype_data = iwl_he_capa;
++	else
++		return;
++
+ 	sband->n_iftype_data = ARRAY_SIZE(iwl_he_capa);
+ 
+ 	/* If not 2x2, we need to indicate 1x1 in the Midamble RX Max NSTS */
+-- 
+2.13.6
+

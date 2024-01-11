@@ -1,0 +1,28 @@
+From dc7e4b317630effc7dd55b714820c158db9addf5 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:45:43 +0200
+Subject: [PATCH 15/43] Revert "iwlwifi: mvm: remove set but not used variable
+ 'he_phy_data'"
+
+This reverts commit 41c4588b06180aaa46dfc1a7d435befbbf269a93.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:42.865325621 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.040323389 +0200
+@@ -1464,6 +1464,12 @@
+ 	/* update aggregation data for monitor sake on default queue */
+ 	if (!queue && (phy_info & IWL_RX_MPDU_PHY_AMPDU)) {
+ 		bool toggle_bit = phy_info & IWL_RX_MPDU_PHY_AMPDU_TOGGLE;
++		u64 he_phy_data;
++
++		if (mvm->trans->cfg->device_family >= IWL_DEVICE_FAMILY_22560)
++			he_phy_data = le64_to_cpu(desc->v3.he_phy_data);
++		else
++			he_phy_data = le64_to_cpu(desc->v1.he_phy_data);
+ 
+ 		rx_status->flag |= RX_FLAG_AMPDU_DETAILS;
+ 		/*

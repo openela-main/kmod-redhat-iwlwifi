@@ -1,0 +1,39 @@
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-drv.c	2019-09-08 16:01:11.062359133 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-drv.c	2019-09-08 16:01:21.332226910 +0200
+@@ -115,6 +115,7 @@
+ 	struct device *dev;
+ 
+ 	int fw_index;                   /* firmware we're trying to load */
++	bool fw_dup;                    /* tru to load firmware from DUP */
+ 	char firmware_name[64];         /* name of firmware file to load */
+ 
+ 	struct completion request_firmware_complete;
+@@ -227,9 +228,15 @@
+ 
+ 	if (first) {
+ 		drv->fw_index = cfg->ucode_api_max;
++		drv->fw_dup = true;
+ 		sprintf(tag, "%d", drv->fw_index);
+ 	} else {
+-		drv->fw_index--;
++		if (drv->fw_dup) {
++			drv->fw_dup = false;
++		} else {
++			drv->fw_dup = true;
++			drv->fw_index--;
++		}
+ 		sprintf(tag, "%d", drv->fw_index);
+ 	}
+ 
+@@ -251,7 +258,8 @@
+ 		return -ENOENT;
+ 	}
+ 
+-	snprintf(drv->firmware_name, sizeof(drv->firmware_name), "%s%s.ucode",
++	snprintf(drv->firmware_name, sizeof(drv->firmware_name), "%s%s%s.ucode",
++		 drv->fw_dup ? "iwlwifi_dup8.0/" : "",
+ 		 cfg->fw_name_pre, tag);
+ 
+ 	IWL_DEBUG_FW_INFO(drv, "attempting to load firmware '%s'\n",

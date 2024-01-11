@@ -1,0 +1,42 @@
+From 4edf3a23bf91859531bcfaa54451c8c39e60bb0b Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:47:12 +0200
+Subject: [PATCH 26/43] Revert "iwlwifi: mvm: remove unnecessary overload
+ variable"
+
+This reverts commit 07f62bb953e83f070df068589b391f74cc06ccca.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.696302266 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:44.863300136 +0200
+@@ -993,6 +993,7 @@
+ 				      IEEE80211_RADIOTAP_HE_MU_FLAGS2_BW_FROM_SIG_A_BW_KNOWN),
+ 	};
+ 	unsigned int radiotap_len = 0;
++	bool overload = phy_info & IWL_RX_MPDU_PHY_TSF_OVERLOAD;
+ 	bool sigb_data = false;
+ 
+ 	he = skb_put_data(skb, &known, sizeof(known));
+@@ -1019,8 +1020,7 @@
+ 	/* temporarily hide the radiotap data */
+ 	__skb_pull(skb, radiotap_len);
+ 
+-	if (he_phy_data != HE_PHY_DATA_INVAL &&
+-	    he_type == RATE_MCS_HE_TYPE_SU) {
++	if (overload && he_type == RATE_MCS_HE_TYPE_SU) {
+ 		he->data1 |=
+ 			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN);
+ 		if (FIELD_GET(IWL_RX_HE_PHY_UPLINK, he_phy_data))
+@@ -1033,7 +1033,7 @@
+ 			if (FIELD_GET(IWL_RX_HE_PHY_DELIM_EOF, he_phy_data))
+ 				rx_status->flag |= RX_FLAG_AMPDU_EOF_BIT;
+ 		}
+-	} else if (he_phy_data != HE_PHY_DATA_INVAL && he_mu) {
++	} else if (overload && he_mu && he_phy_data != HE_PHY_DATA_INVAL) {
+ 		he_mu->flags1 |=
+ 			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIBG_SYM_OR_USER_NUM_MASK,
+ 						   he_phy_data),

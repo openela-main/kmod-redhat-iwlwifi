@@ -1,0 +1,28 @@
+From 7ebbaa13b06672b7a2b20292d11bb57218f3c9d1 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 11 Jul 2019 18:31:34 +0200
+Subject: [PATCH] Revert "netlink: make validation more configurable for future
+ strictness"
+
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+index 44e87a41d244..6e00161fdb92 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+@@ -4470,8 +4470,8 @@ static int __iwl_mvm_mac_testmode_cmd(struct iwl_mvm *mvm,
+ 	int err;
+ 	u32 noa_duration;
+ 
+-	err = nla_parse_deprecated(tb, IWL_MVM_TM_ATTR_MAX, data, len,
+-				   iwl_mvm_tm_policy, NULL);
++	err = nla_parse(tb, IWL_MVM_TM_ATTR_MAX, data, len, iwl_mvm_tm_policy,
++			NULL);
+ 	if (err)
+ 		return err;
+ 
+-- 
+2.13.6
+

@@ -1,0 +1,206 @@
+From 0f89f208e7a2437b5d7ff440db091c94d2ce3ac2 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 11 Jul 2019 18:39:53 +0200
+Subject: [PATCH] Revert "mac80211: update HE IEs to D3.3"
+
+This reverts commit 77ff2c6b49843b01adef1f80abb091753e4c9c65.
+---
+ drivers/net/wireless/intel/iwlwifi/fw/api/mac.h    | 26 +---------
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 58 ++++++++++++++--------
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c  | 42 ----------------
+ include/linux/ieee80211.h                          | 22 +++-----
+ 4 files changed, 46 insertions(+), 102 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/fw/api/mac.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/fw/api/mac.h	2019-06-27 14:54:04.121678482 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/fw/api/mac.h	2019-07-11 18:41:11.521146562 +0200
+@@ -7,7 +7,7 @@
+  *
+  * Copyright(c) 2012 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2017        Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of version 2 of the GNU General Public License as
+@@ -29,7 +29,7 @@
+  *
+  * Copyright(c) 2012 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2017        Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  * All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+@@ -433,28 +433,6 @@
+ 	__le16 mu_time;
+ } __packed; /* AC_QOS_DOT11AX_API_S */
+ 
+-/**
+- * enum iwl_he_pkt_ext_constellations - PPE constellation indices
+- * @IWL_HE_PKT_EXT_BPSK: BPSK
+- * @IWL_HE_PKT_EXT_QPSK:  QPSK
+- * @IWL_HE_PKT_EXT_16QAM: 16-QAM
+- * @IWL_HE_PKT_EXT_64QAM: 64-QAM
+- * @IWL_HE_PKT_EXT_256QAM: 256-QAM
+- * @IWL_HE_PKT_EXT_1024QAM: 1024-QAM
+- * @IWL_HE_PKT_EXT_RESERVED: reserved value
+- * @IWL_HE_PKT_EXT_NONE: not defined
+- */
+-enum iwl_he_pkt_ext_constellations {
+-	IWL_HE_PKT_EXT_BPSK = 0,
+-	IWL_HE_PKT_EXT_QPSK,
+-	IWL_HE_PKT_EXT_16QAM,
+-	IWL_HE_PKT_EXT_64QAM,
+-	IWL_HE_PKT_EXT_256QAM,
+-	IWL_HE_PKT_EXT_1024QAM,
+-	IWL_HE_PKT_EXT_RESERVED,
+-	IWL_HE_PKT_EXT_NONE,
+-};
+-
+ #define MAX_HE_SUPP_NSS	2
+ #define MAX_HE_CHANNEL_BW_INDX	4
+ 
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-07-11 18:41:04.030243005 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-07-11 18:41:11.522146549 +0200
+@@ -497,6 +497,7 @@
+ 					IEEE80211_HE_MAC_CAP1_MULTI_TID_AGG_RX_QOS_8,
+ 				.mac_cap_info[2] =
+ 					IEEE80211_HE_MAC_CAP2_32BIT_BA_BITMAP |
++					IEEE80211_HE_MAC_CAP2_MU_CASCADING |
+ 					IEEE80211_HE_MAC_CAP2_ACK_EN,
+ 				.mac_cap_info[3] =
+ 					IEEE80211_HE_MAC_CAP3_OMI_CONTROL |
+@@ -507,9 +508,7 @@
+ 				.mac_cap_info[5] =
+ 					IEEE80211_HE_MAC_CAP5_MULTI_TID_AGG_TX_QOS_B40 |
+ 					IEEE80211_HE_MAC_CAP5_MULTI_TID_AGG_TX_QOS_B41 |
+-					IEEE80211_HE_MAC_CAP5_UL_2x996_TONE_RU |
+-					IEEE80211_HE_MAC_CAP5_HE_DYNAMIC_SM_PS |
+-					IEEE80211_HE_MAC_CAP5_HT_VHT_TRIG_FRAME_RX,
++					IEEE80211_HE_MAC_CAP5_UL_2x996_TONE_RU,
+ 				.phy_cap_info[0] =
+ 					IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G |
+ 					IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_80MHZ_IN_5G |
+@@ -517,13 +516,18 @@
+ 				.phy_cap_info[1] =
+ 					IEEE80211_HE_PHY_CAP1_PREAMBLE_PUNC_RX_MASK |
+ 					IEEE80211_HE_PHY_CAP1_DEVICE_CLASS_A |
+-					IEEE80211_HE_PHY_CAP1_LDPC_CODING_IN_PAYLOAD,
++					IEEE80211_HE_PHY_CAP1_LDPC_CODING_IN_PAYLOAD |
++					IEEE80211_HE_PHY_CAP1_MIDAMBLE_RX_TX_MAX_NSTS,
+ 				.phy_cap_info[2] =
+-					IEEE80211_HE_PHY_CAP2_NDP_4x_LTF_AND_3_2US,
++					IEEE80211_HE_PHY_CAP2_NDP_4x_LTF_AND_3_2US |
++					IEEE80211_HE_PHY_CAP2_STBC_TX_UNDER_80MHZ |
++					IEEE80211_HE_PHY_CAP2_STBC_RX_UNDER_80MHZ |
++					IEEE80211_HE_PHY_CAP2_UL_MU_FULL_MU_MIMO |
++					IEEE80211_HE_PHY_CAP2_UL_MU_PARTIAL_MU_MIMO,
+ 				.phy_cap_info[3] =
+-					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_TX_NO_DCM |
++					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_TX_BPSK |
+ 					IEEE80211_HE_PHY_CAP3_DCM_MAX_TX_NSS_1 |
+-					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_RX_NO_DCM |
++					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_RX_BPSK |
+ 					IEEE80211_HE_PHY_CAP3_DCM_MAX_RX_NSS_1,
+ 				.phy_cap_info[4] =
+ 					IEEE80211_HE_PHY_CAP4_SU_BEAMFORMEE |
+@@ -531,8 +535,16 @@
+ 					IEEE80211_HE_PHY_CAP4_BEAMFORMEE_MAX_STS_UNDER_80MHZ_8,
+ 				.phy_cap_info[5] =
+ 					IEEE80211_HE_PHY_CAP5_BEAMFORMEE_NUM_SND_DIM_UNDER_80MHZ_2 |
+-					IEEE80211_HE_PHY_CAP5_BEAMFORMEE_NUM_SND_DIM_ABOVE_80MHZ_2,
++					IEEE80211_HE_PHY_CAP5_BEAMFORMEE_NUM_SND_DIM_ABOVE_80MHZ_2 |
++					IEEE80211_HE_PHY_CAP5_NG16_SU_FEEDBACK |
++					IEEE80211_HE_PHY_CAP5_NG16_MU_FEEDBACK,
+ 				.phy_cap_info[6] =
++					IEEE80211_HE_PHY_CAP6_CODEBOOK_SIZE_42_SU |
++					IEEE80211_HE_PHY_CAP6_CODEBOOK_SIZE_75_MU |
++					IEEE80211_HE_PHY_CAP6_TRIG_SU_BEAMFORMER_FB |
++					IEEE80211_HE_PHY_CAP6_TRIG_MU_BEAMFORMER_FB |
++					IEEE80211_HE_PHY_CAP6_TRIG_CQI_FB |
++					IEEE80211_HE_PHY_CAP6_PARTIAL_BANDWIDTH_DL_MUMIMO |
+ 					IEEE80211_HE_PHY_CAP6_PPE_THRESHOLD_PRESENT,
+ 				.phy_cap_info[7] =
+ 					IEEE80211_HE_PHY_CAP7_POWER_BOOST_FACTOR_AR |
+@@ -543,12 +555,11 @@
+ 					IEEE80211_HE_PHY_CAP8_20MHZ_IN_40MHZ_HE_PPDU_IN_2G |
+ 					IEEE80211_HE_PHY_CAP8_20MHZ_IN_160MHZ_HE_PPDU |
+ 					IEEE80211_HE_PHY_CAP8_80MHZ_IN_160MHZ_HE_PPDU |
+-					IEEE80211_HE_PHY_CAP8_DCM_MAX_RU_2x996,
++					IEEE80211_HE_PHY_CAP8_DCM_MAX_BW_160_OR_80P80_MHZ,
+ 				.phy_cap_info[9] =
+ 					IEEE80211_HE_PHY_CAP9_NON_TRIGGERED_CQI_FEEDBACK |
+ 					IEEE80211_HE_PHY_CAP9_RX_FULL_BW_SU_USING_MU_WITH_COMP_SIGB |
+-					IEEE80211_HE_PHY_CAP9_RX_FULL_BW_SU_USING_MU_WITH_NON_COMP_SIGB |
+-					IEEE80211_HE_PHY_CAP9_NOMIMAL_PKT_PADDING_RESERVED,
++					IEEE80211_HE_PHY_CAP9_RX_FULL_BW_SU_USING_MU_WITH_NON_COMP_SIGB,
+ 			},
+ 			/*
+ 			 * Set default Tx/Rx HE MCS NSS Support field.
+@@ -582,26 +593,28 @@
+ 					IEEE80211_HE_MAC_CAP1_MULTI_TID_AGG_RX_QOS_8,
+ 				.mac_cap_info[2] =
+ 					IEEE80211_HE_MAC_CAP2_BSR |
++					IEEE80211_HE_MAC_CAP2_MU_CASCADING |
+ 					IEEE80211_HE_MAC_CAP2_ACK_EN,
+ 				.mac_cap_info[3] =
+ 					IEEE80211_HE_MAC_CAP3_OMI_CONTROL |
+ 					IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2,
+ 				.mac_cap_info[4] =
+ 					IEEE80211_HE_MAC_CAP4_AMDSU_IN_AMPDU,
+-				.mac_cap_info[5] =
+-					IEEE80211_HE_MAC_CAP5_UL_2x996_TONE_RU,
+ 				.phy_cap_info[0] =
+ 					IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G |
+ 					IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_80MHZ_IN_5G |
+ 					IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_160MHZ_IN_5G,
+ 				.phy_cap_info[1] =
+-					IEEE80211_HE_PHY_CAP1_LDPC_CODING_IN_PAYLOAD,
++					IEEE80211_HE_PHY_CAP1_LDPC_CODING_IN_PAYLOAD |
++					IEEE80211_HE_PHY_CAP1_MIDAMBLE_RX_TX_MAX_NSTS,
+ 				.phy_cap_info[2] =
+-					IEEE80211_HE_PHY_CAP2_NDP_4x_LTF_AND_3_2US,
++					IEEE80211_HE_PHY_CAP2_NDP_4x_LTF_AND_3_2US |
++					IEEE80211_HE_PHY_CAP2_STBC_TX_UNDER_80MHZ |
++					IEEE80211_HE_PHY_CAP2_STBC_RX_UNDER_80MHZ,
+ 				.phy_cap_info[3] =
+-					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_TX_NO_DCM |
++					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_TX_BPSK |
+ 					IEEE80211_HE_PHY_CAP3_DCM_MAX_TX_NSS_1 |
+-					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_RX_NO_DCM |
++					IEEE80211_HE_PHY_CAP3_DCM_MAX_CONST_RX_BPSK |
+ 					IEEE80211_HE_PHY_CAP3_DCM_MAX_RX_NSS_1,
+ 				.phy_cap_info[4] =
+ 					IEEE80211_HE_PHY_CAP4_SU_BEAMFORMEE |
+@@ -609,8 +622,12 @@
+ 					IEEE80211_HE_PHY_CAP4_BEAMFORMEE_MAX_STS_UNDER_80MHZ_8,
+ 				.phy_cap_info[5] =
+ 					IEEE80211_HE_PHY_CAP5_BEAMFORMEE_NUM_SND_DIM_UNDER_80MHZ_2 |
+-					IEEE80211_HE_PHY_CAP5_BEAMFORMEE_NUM_SND_DIM_ABOVE_80MHZ_2,
++					IEEE80211_HE_PHY_CAP5_BEAMFORMEE_NUM_SND_DIM_ABOVE_80MHZ_2 |
++					IEEE80211_HE_PHY_CAP5_NG16_SU_FEEDBACK |
++					IEEE80211_HE_PHY_CAP5_NG16_MU_FEEDBACK,
+ 				.phy_cap_info[6] =
++					IEEE80211_HE_PHY_CAP6_CODEBOOK_SIZE_42_SU |
++					IEEE80211_HE_PHY_CAP6_CODEBOOK_SIZE_75_MU |
+ 					IEEE80211_HE_PHY_CAP6_PPE_THRESHOLD_PRESENT,
+ 				.phy_cap_info[7] =
+ 					IEEE80211_HE_PHY_CAP7_HE_SU_MU_PPDU_4XLTF_AND_08_US_GI |
+@@ -620,11 +637,10 @@
+ 					IEEE80211_HE_PHY_CAP8_20MHZ_IN_40MHZ_HE_PPDU_IN_2G |
+ 					IEEE80211_HE_PHY_CAP8_20MHZ_IN_160MHZ_HE_PPDU |
+ 					IEEE80211_HE_PHY_CAP8_80MHZ_IN_160MHZ_HE_PPDU |
+-					IEEE80211_HE_PHY_CAP8_DCM_MAX_RU_2x996,
++					IEEE80211_HE_PHY_CAP8_DCM_MAX_BW_160_OR_80P80_MHZ,
+ 				.phy_cap_info[9] =
+ 					IEEE80211_HE_PHY_CAP9_RX_FULL_BW_SU_USING_MU_WITH_COMP_SIGB |
+-					IEEE80211_HE_PHY_CAP9_RX_FULL_BW_SU_USING_MU_WITH_NON_COMP_SIGB |
+-					IEEE80211_HE_PHY_CAP9_NOMIMAL_PKT_PADDING_RESERVED,
++					IEEE80211_HE_PHY_CAP9_RX_FULL_BW_SU_USING_MU_WITH_NON_COMP_SIGB,
+ 			},
+ 			/*
+ 			 * Set default Tx/Rx HE MCS NSS Support field.

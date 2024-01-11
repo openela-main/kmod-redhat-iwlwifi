@@ -1,0 +1,25 @@
+From eda9d623bc398fac76899008fd69176aed54f16d Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 14:51:13 +0200
+Subject: [PATCH 4/4] Revert "iwlwifi: mvm: fix merge damage in
+ iwl_mvm_rx_mpdu_mq()"
+
+This reverts commit 3864be551405b582ae38fbcdfdbb6e49052f5f6d.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 15:31:58.341930748 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 15:31:58.537927641 +0200
+@@ -956,9 +956,6 @@
+ 		rx_status->ampdu_reference = mvm->ampdu_ref;
+ 	}
+ 
+-	if (unlikely(mvm->monitor_on))
+-		iwl_mvm_add_rtap_sniffer_config(mvm, skb);
+-
+ 	rcu_read_lock();
+ 
+ 	if (desc->status & cpu_to_le16(IWL_RX_MPDU_STATUS_SRC_STA_FOUND)) {

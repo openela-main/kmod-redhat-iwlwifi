@@ -1,0 +1,25 @@
+From 87d5d91b6ab374c905a0a4a0620d2a2830fe7942 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:20:48 +0200
+Subject: [PATCH 42/43] Revert "iwlwifi: mvm: set MAC_FILTER_IN_11AX in AP
+ mode"
+
+This reverts commit 3b5ee8dd8bb1a0f820eb5c85e31f92a2897bfa3d.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-09-06 01:25:40.745352663 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-09-06 01:25:47.620264969 +0200
+@@ -1181,9 +1181,6 @@
+ 		IWL_DEBUG_HC(mvm, "No need to receive beacons\n");
+ 	}
+ 
+-	if (vif->bss_conf.he_support && !iwlwifi_mod_params.disable_11ax)
+-		cmd->filter_flags |= cpu_to_le32(MAC_FILTER_IN_11AX);
+-
+ 	ctxt_ap->bi = cpu_to_le32(vif->bss_conf.beacon_int);
+ 	ctxt_ap->dtim_interval = cpu_to_le32(vif->bss_conf.beacon_int *
+ 					     vif->bss_conf.dtim_period);

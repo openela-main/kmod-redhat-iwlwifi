@@ -1,0 +1,25 @@
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-backport-compat.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-backport-compat.h	2019-09-06 15:58:07.846046124 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-backport-compat.h	2019-09-06 15:58:12.144977964 +0200
+@@ -1,6 +1,6 @@
+ #ifndef IWL_BACKPORT_COMPAT_H
+ #define IWL_BACKPORT_COMPAT_H
+ 
+-
++#define IEEE80211_MAX_AMPDU_BUF_HT    0x40
+ 
+ #endif /* IWL_BACKPORT_COMPAT_H */
+Index: src/drivers/net/wireless/intel/iwlwifi/cfg/22000.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/cfg/22000.c	2019-09-06 15:58:11.358990426 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/cfg/22000.c	2019-09-06 15:58:40.846522899 +0200
+@@ -55,6 +55,8 @@
+ #include <linux/stringify.h>
+ #include "iwl-config.h"
+ 
++#include "iwl-backport-compat.h"
++
+ /* Highest firmware API version supported */
+ #define IWL_22000_UCODE_API_MAX	48
+ 

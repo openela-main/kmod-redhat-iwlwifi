@@ -1,0 +1,24 @@
+From 9b259b74b866cd46fd0b24ca31c4a56f338c97b9 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 02:03:06 +0200
+Subject: [PATCH 1/7] Revert "iwlwifi: Use correct channel_profile
+ iniwl_get_nvm"
+
+This reverts commit 14cf9bc6085dfd5bff61db917d6d20f558979f27.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 02:01:41.057549311 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 02:17:21.397442652 +0200
+@@ -1320,7 +1320,7 @@
+ 	}
+ 
+ 	iwl_init_sbands(trans->dev, trans->cfg, nvm,
+-			channel_profile,
++			rsp->regulatory.channel_profile,
+ 			nvm->valid_tx_ant & fw->valid_tx_ant,
+ 			nvm->valid_rx_ant & fw->valid_rx_ant,
+ 			sbands_flags);

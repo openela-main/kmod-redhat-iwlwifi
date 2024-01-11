@@ -1,0 +1,41 @@
+From 83afe9f6493cf209160320e80b451a49c935a536 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 11 Jul 2019 18:33:58 +0200
+Subject: [PATCH] Revert "iwlwifi: mvm: fix pointer reference when setting HE
+ QAM thres"
+
+This reverts commit 0bfefe2f41dd5bd60c7b695e450fc3a931875980.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+index 6e00161fdb92..6bbd30c2ee61 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+@@ -2348,18 +2348,16 @@ static void iwl_mvm_cfg_he_sta(struct iwl_mvm *mvm,
+ 
+ 		/* Set the PPE thresholds accordingly */
+ 		if (low_th >= 0 && high_th >= 0) {
+-			struct iwl_he_pkt_ext *pkt_ext =
+-				(struct iwl_he_pkt_ext *)&sta_ctxt_cmd.pkt_ext;
++			u8 ***pkt_ext_qam =
++				(void *)sta_ctxt_cmd.pkt_ext.pkt_ext_qam_th;
+ 
+ 			for (i = 0; i < MAX_HE_SUPP_NSS; i++) {
+ 				u8 bw;
+ 
+ 				for (bw = 0; bw < MAX_HE_CHANNEL_BW_INDX;
+ 				     bw++) {
+-					pkt_ext->pkt_ext_qam_th[i][bw][0] =
+-						low_th;
+-					pkt_ext->pkt_ext_qam_th[i][bw][1] =
+-						high_th;
++					pkt_ext_qam[i][bw][0] = low_th;
++					pkt_ext_qam[i][bw][1] = high_th;
+ 				}
+ 			}
+ 
+-- 
+2.13.6
+

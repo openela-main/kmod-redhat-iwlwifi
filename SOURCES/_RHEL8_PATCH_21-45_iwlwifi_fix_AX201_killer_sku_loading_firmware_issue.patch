@@ -1,0 +1,56 @@
+Date: Fri, 19 Jul 2019 11:39:48 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: rhkernel-list@redhat.com
+Cc: Jarod Wilson <jarod@redhat.com>
+Subject: [RHEL8 PATCH 21/45] iwlwifi: fix AX201 killer sku loading firmware
+ issue
+
+Bugzilla: http://bugzilla.redhat.com/1728992
+
+commit b17dc0632a17fbfe66b34ee7c24e1cc10cfc503e
+Author: Matt Chen <matt.chen@intel.com>
+Date:   Wed May 29 16:39:53 2019 +0300
+
+    iwlwifi: fix AX201 killer sku loading firmware issue
+
+    When try to bring up the AX201 2 killer sku, we
+    run into:
+    [81261.392463] iwlwifi 0000:01:00.0: loaded firmware version 46.8c20f243.0 op_mode iwlmvm
+    [81261.407407] iwlwifi 0000:01:00.0: Detected Intel(R) Dual Band Wireless AX 22000, REV=0x340
+    [81262.424778] iwlwifi 0000:01:00.0: Collecting data: trigger 16 fired.
+    [81262.673359] iwlwifi 0000:01:00.0: Start IWL Error Log Dump:
+    [81262.673365] iwlwifi 0000:01:00.0: Status: 0x00000000, count: -906373681
+    [81262.673368] iwlwifi 0000:01:00.0: Loaded firmware version: 46.8c20f243.0
+    [81262.673371] iwlwifi 0000:01:00.0: 0x507C015D | ADVANCED_SYSASSERT
+
+    Fix this issue by adding 2 more cfg to avoid modifying the
+    original cfg configuration.
+
+    Signed-off-by: Matt Chen <matt.chen@intel.com>
+    Signed-off-by: Luca Coelho <luciano.coelho@intel.com>
+    Signed-off-by: Kalle Valo <kvalo@codeaurora.org>
+
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+---
+ drivers/net/wireless/intel/iwlwifi/pcie/trans.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/pcie/trans.c b/drivers/net/wireless/intel/iwlwifi/pcie/trans.c
+index 21da18af0155..dfa1bed124aa 100644
+--- a/drivers/net/wireless/intel/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/intel/iwlwifi/pcie/trans.c
+@@ -3598,7 +3598,9 @@ struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
+ 		}
+ 	} else if (CSR_HW_RF_ID_TYPE_CHIP_ID(trans->hw_rf_id) ==
+ 		   CSR_HW_RF_ID_TYPE_CHIP_ID(CSR_HW_RF_ID_TYPE_HR) &&
+-		   (trans->cfg != &iwl_ax200_cfg_cc ||
++		   ((trans->cfg != &iwl_ax200_cfg_cc &&
++		    trans->cfg != &killer1650x_2ax_cfg &&
++		    trans->cfg != &killer1650w_2ax_cfg) ||
+ 		    trans->hw_rev == CSR_HW_REV_TYPE_QNJ_B0)) {
+ 		u32 hw_status;
+ 
+-- 
+2.20.1
+
+

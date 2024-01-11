@@ -1,0 +1,84 @@
+From 1235f5e955960b66e022f0aca5703b9dfc68ef30 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:46:08 +0200
+Subject: [PATCH 18/43] Revert "iwlwifi: mvm: add more information to HE
+ radiotap"
+
+This reverts commit fed3c4ea6f8f12cb73010c969070f7dbed46ff3f.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 35 +++------------------------
+ 1 file changed, 4 insertions(+), 31 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.370319180 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:43.541316998 +0200
+@@ -1044,7 +1044,6 @@
+ 				       int queue)
+ {
+ 	u32 he_type = rate_n_flags & RATE_MCS_HE_TYPE_MSK;
+-	bool sigb_data;
+ 
+ 	he->data1 |= cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_BSS_COLOR_KNOWN);
+ 	he->data3 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_BSS_COLOR_MASK,
+@@ -1056,8 +1055,9 @@
+ 						he_phy_data),
+ 				      IEEE80211_RADIOTAP_HE_DATA6_TXOP);
+ 
+-	switch (he_type) {
+-	case RATE_MCS_HE_TYPE_MU:
++	if (he_mu) {
++		bool sigb_data;
++
+ 		he_mu->flags1 |=
+ 			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_MU_SIGB_DCM,
+ 						   he_phy_data),
+@@ -1091,28 +1091,13 @@
+ 			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_HE_LTF_NUM_MASK,
+ 						   he_phy_data),
+ 					 IEEE80211_RADIOTAP_HE_DATA5_NUM_LTF_SYMS);
+-		break;
+-	case RATE_MCS_HE_TYPE_SU:
+-	case RATE_MCS_HE_TYPE_EXT_SU:
+-		he->data1 |=
+-			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_BEAM_CHANGE_KNOWN);
+-		he->data3 |=
+-			le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_BEAM_CHNG,
+-						   he_phy_data),
+-					 IEEE80211_RADIOTAP_HE_DATA3_BEAM_CHANGE);
+-		break;
+ 	}
+ 
+ 	if (he_type != RATE_MCS_HE_TYPE_TRIG) {
+ 		u16 d1known = IEEE80211_RADIOTAP_HE_DATA1_LDPC_XSYMSEG_KNOWN |
+-			      IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN |
+-			      IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE_KNOWN |
+-			      IEEE80211_RADIOTAP_HE_DATA1_DOPPLER_KNOWN;
+-		u16 d2known = IEEE80211_RADIOTAP_HE_DATA2_PRE_FEC_PAD_KNOWN |
+-			      IEEE80211_RADIOTAP_HE_DATA2_PE_DISAMBIG_KNOWN;
++			      IEEE80211_RADIOTAP_HE_DATA1_UL_DL_KNOWN;
+ 
+ 		he->data1 |= cpu_to_le16(d1known);
+-		he->data2 |= cpu_to_le16(d2known);
+ 
+ 		he->data3 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_UPLINK,
+ 							he_phy_data),
+@@ -1120,18 +1105,6 @@
+ 		he->data3 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_LDPC_EXT_SYM,
+ 							he_phy_data),
+ 					      IEEE80211_RADIOTAP_HE_DATA3_LDPC_XSYMSEG);
+-		he->data4 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_SPATIAL_REUSE_MASK,
+-							he_phy_data),
+-					      IEEE80211_RADIOTAP_HE_DATA4_SU_MU_SPTL_REUSE);
+-		he->data5 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_PRE_FEC_PAD_MASK,
+-							he_phy_data),
+-					      IEEE80211_RADIOTAP_HE_DATA5_PRE_FEC_PAD);
+-		he->data5 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_PE_DISAMBIG,
+-							he_phy_data),
+-					      IEEE80211_RADIOTAP_HE_DATA5_PE_DISAMBIG);
+-		he->data6 |= le16_encode_bits(FIELD_GET(IWL_RX_HE_PHY_DOPPLER,
+-							he_phy_data),
+-					      IEEE80211_RADIOTAP_HE_DATA6_DOPPLER);
+ 	}
+ 
+ 	switch (FIELD_GET(IWL_RX_HE_PHY_INFO_TYPE_MASK, he_phy_data)) {

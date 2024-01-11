@@ -1,0 +1,30 @@
+From 910c002de243c4fa4c053e61dbccd7cf2352fe74 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 11 Jul 2019 18:34:36 +0200
+Subject: [PATCH] Revert "iwlwifi: remove unnecessary goto out in
+ iwl_parse_nvm_mcc_info()"
+
+This reverts commit a2a120a9cdf13fa96b68f9d16f50d05e5a2c510e.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c b/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+index d87a6bb3e456..2a879e0b331f 100644
+--- a/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+@@ -1188,8 +1188,10 @@ iwl_parse_nvm_mcc_info(struct device *dev, const struct iwl_cfg *cfg,
+ 	 */
+ 	copy_rd = kmemdup(regd, struct_size(regd, reg_rules, valid_rules),
+ 			  GFP_KERNEL);
+-	if (!copy_rd)
++	if (!copy_rd) {
+ 		copy_rd = ERR_PTR(-ENOMEM);
++		goto out;
++	}
+ 
+ out:
+ 	kfree(regdb_ptrs);
+-- 
+2.13.6
+

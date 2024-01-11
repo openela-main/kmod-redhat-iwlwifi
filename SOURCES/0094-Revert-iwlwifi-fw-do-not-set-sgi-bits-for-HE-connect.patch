@@ -1,0 +1,28 @@
+From 99a69851c1134de37f4d3a52e3c9a43900341176 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 15:37:47 +0200
+Subject: [PATCH 2/5] Revert "iwlwifi: fw: do not set sgi bits for HE
+ connection"
+
+This reverts commit 5c2dbebb446539eb9640bf59a02756d6e7f1fc53.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 15:34:15.507755972 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rs-fw.c	2019-09-06 15:42:07.472272934 +0200
+@@ -98,12 +98,8 @@
+ {
+ 	struct ieee80211_sta_ht_cap *ht_cap = &sta->ht_cap;
+ 	struct ieee80211_sta_vht_cap *vht_cap = &sta->vht_cap;
+-	struct ieee80211_sta_he_cap *he_cap = &sta->he_cap;
+ 	u8 supp = 0;
+ 
+-	if (he_cap && he_cap->has_he)
+-		return 0;
+-
+ 	if (ht_cap->cap & IEEE80211_HT_CAP_SGI_20)
+ 		supp |= BIT(IWL_TLC_MNG_CH_WIDTH_20MHZ);
+ 	if (ht_cap->cap & IEEE80211_HT_CAP_SGI_40)

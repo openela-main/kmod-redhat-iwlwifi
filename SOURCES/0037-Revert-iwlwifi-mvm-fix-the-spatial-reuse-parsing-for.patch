@@ -1,0 +1,36 @@
+From 13d40dd19e04e63ec8bdaae9f41927d87608aefd Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:17:11 +0200
+Subject: [PATCH 08/43] Revert "iwlwifi: mvm: fix the spatial reuse parsing for
+ HE_TRIG PPDUs"
+
+This reverts commit a197e6d10ce26bdf4e7b8941321fb924b38ece02.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:41.666340915 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:41.856338491 +0200
+@@ -1090,16 +1090,16 @@
+ 					 IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE2_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE3_KNOWN |
+ 					 IEEE80211_RADIOTAP_HE_DATA1_SPTL_REUSE4_KNOWN);
+-		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d2,
++		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA2_HE_TB_EXT_SPTL_REUSE1),
+ 					      IEEE80211_RADIOTAP_HE_DATA4_TB_SPTL_REUSE1);
+-		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d2,
++		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA2_HE_TB_EXT_SPTL_REUSE2),
+ 					      IEEE80211_RADIOTAP_HE_DATA4_TB_SPTL_REUSE2);
+-		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d2,
++		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA2_HE_TB_EXT_SPTL_REUSE3),
+ 					      IEEE80211_RADIOTAP_HE_DATA4_TB_SPTL_REUSE3);
+-		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d2,
++		he->data4 |= le16_encode_bits(le32_get_bits(phy_data->d0,
+ 							    IWL_RX_PHY_DATA2_HE_TB_EXT_SPTL_REUSE4),
+ 					      IEEE80211_RADIOTAP_HE_DATA4_TB_SPTL_REUSE4);
+ 		/* fall through */

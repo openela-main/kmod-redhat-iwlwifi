@@ -1,0 +1,181 @@
+Date: Fri, 19 Jul 2019 11:39:44 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: rhkernel-list@redhat.com
+Cc: Jarod Wilson <jarod@redhat.com>
+Subject: [RHEL8 PATCH 17/45] iwlwifi: mvm: remove d3_sram debugfs file
+
+Bugzilla: http://bugzilla.redhat.com/1728992
+
+commit 23f57bfac7c283746ffba5caf4046b152074b2d9
+Author: Johannes Berg <johannes.berg@intel.com>
+Date:   Wed May 29 16:39:49 2019 +0300
+
+    iwlwifi: mvm: remove d3_sram debugfs file
+
+    This debugfs file is really old, and cannot work properly since
+    the unified image support. Rather than trying to make it work,
+    which is difficult now due to multiple images (LMAC/UMAC etc.)
+    just remove it - we no longer need it since we properly do a FW
+    coredump even in D3 cases.
+
+    Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+    Signed-off-by: Luca Coelho <luciano.coelho@intel.com>
+    Signed-off-by: Kalle Valo <kvalo@codeaurora.org>
+
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/d3.c   | 22 -------
+ .../net/wireless/intel/iwlwifi/mvm/debugfs.c  | 57 -------------------
+ drivers/net/wireless/intel/iwlwifi/mvm/mvm.h  |  2 -
+ drivers/net/wireless/intel/iwlwifi/mvm/ops.c  |  3 -
+ 4 files changed, 84 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/d3.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/d3.c	2019-09-08 16:05:32.734990158 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/d3.c	2019-09-11 11:38:55.196303575 +0200
+@@ -1972,26 +1972,6 @@
+ 	}
+ }
+ 
+-static void iwl_mvm_read_d3_sram(struct iwl_mvm *mvm)
+-{
+-#ifdef CONFIG_IWLWIFI_DEBUGFS
+-	const struct fw_img *img = &mvm->fw->img[IWL_UCODE_WOWLAN];
+-	u32 len = img->sec[IWL_UCODE_SECTION_DATA].len;
+-	u32 offs = img->sec[IWL_UCODE_SECTION_DATA].offset;
+-
+-	if (!mvm->store_d3_resume_sram)
+-		return;
+-
+-	if (!mvm->d3_resume_sram) {
+-		mvm->d3_resume_sram = kzalloc(len, GFP_KERNEL);
+-		if (!mvm->d3_resume_sram)
+-			return;
+-	}
+-
+-	iwl_trans_read_mem_bytes(mvm->trans, offs, mvm->d3_resume_sram, len);
+-#endif
+-}
+-
+ static void iwl_mvm_d3_disconnect_iter(void *data, u8 *mac,
+ 				       struct ieee80211_vif *vif)
+ {
+@@ -2054,8 +2034,6 @@
+ 	}
+ 
+ 	iwl_fw_dbg_read_d3_debug_data(&mvm->fwrt);
+-	/* query SRAM first in case we want event logging */
+-	iwl_mvm_read_d3_sram(mvm);
+ 
+ 	if (iwl_mvm_check_rt_status(mvm, vif)) {
+ 		set_bit(STATUS_FW_ERROR, &mvm->trans->status);
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-08 16:05:35.535954096 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/debugfs.c	2019-09-11 11:38:55.197303554 +0200
+@@ -1552,59 +1552,6 @@
+ }
+ #endif
+ 
+-#ifdef CONFIG_PM_SLEEP
+-static ssize_t iwl_dbgfs_d3_sram_write(struct iwl_mvm *mvm, char *buf,
+-				       size_t count, loff_t *ppos)
+-{
+-	int store;
+-
+-	if (sscanf(buf, "%d", &store) != 1)
+-		return -EINVAL;
+-
+-	mvm->store_d3_resume_sram = store;
+-
+-	return count;
+-}
+-
+-static ssize_t iwl_dbgfs_d3_sram_read(struct file *file, char __user *user_buf,
+-				      size_t count, loff_t *ppos)
+-{
+-	struct iwl_mvm *mvm = file->private_data;
+-	const struct fw_img *img;
+-	int ofs, len, pos = 0;
+-	size_t bufsz, ret;
+-	char *buf;
+-	u8 *ptr = mvm->d3_resume_sram;
+-
+-	img = &mvm->fw->img[IWL_UCODE_WOWLAN];
+-	len = img->sec[IWL_UCODE_SECTION_DATA].len;
+-
+-	bufsz = len * 4 + 256;
+-	buf = kzalloc(bufsz, GFP_KERNEL);
+-	if (!buf)
+-		return -ENOMEM;
+-
+-	pos += scnprintf(buf, bufsz, "D3 SRAM capture: %sabled\n",
+-			 mvm->store_d3_resume_sram ? "en" : "dis");
+-
+-	if (ptr) {
+-		for (ofs = 0; ofs < len; ofs += 16) {
+-			pos += scnprintf(buf + pos, bufsz - pos,
+-					 "0x%.4x %16ph\n", ofs, ptr + ofs);
+-		}
+-	} else {
+-		pos += scnprintf(buf + pos, bufsz - pos,
+-				 "(no data captured)\n");
+-	}
+-
+-	ret = simple_read_from_buffer(user_buf, count, ppos, buf, pos);
+-
+-	kfree(buf);
+-
+-	return ret;
+-}
+-#endif
+-
+ #define PRINT_MVM_REF(ref) do {						\
+ 	if (mvm->refs[ref])						\
+ 		pos += scnprintf(buf + pos, bufsz - pos,		\
+@@ -1872,9 +1819,6 @@
+ MVM_DEBUGFS_READ_WRITE_FILE_OPS(bcast_filters_macs, 256);
+ #endif
+ 
+-#ifdef CONFIG_PM_SLEEP
+-MVM_DEBUGFS_READ_WRITE_FILE_OPS(d3_sram, 8);
+-#endif
+ #ifdef CONFIG_ACPI
+ MVM_DEBUGFS_READ_FILE_OPS(sar_geo_profile);
+ #endif
+@@ -2091,7 +2035,6 @@
+ #endif
+ 
+ #ifdef CONFIG_PM_SLEEP
+-	MVM_DEBUGFS_ADD_FILE(d3_sram, mvm->debugfs_dir, 0600);
+ 	MVM_DEBUGFS_ADD_FILE(d3_test, mvm->debugfs_dir, 0400);
+ 	debugfs_create_bool("d3_wake_sysassert", 0600, mvm->debugfs_dir,
+ 			    &mvm->d3_wake_sysassert);
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-08 16:05:35.630952873 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mvm.h	2019-09-11 11:38:55.198303534 +0200
+@@ -1004,8 +1004,6 @@
+ #ifdef CONFIG_IWLWIFI_DEBUGFS
+ 	bool d3_wake_sysassert;
+ 	bool d3_test_active;
+-	bool store_d3_resume_sram;
+-	void *d3_resume_sram;
+ 	u32 d3_test_pme_ptr;
+ 	struct ieee80211_vif *keep_vif;
+ 	u32 last_netdetect_scans; /* no. of scans in the last net-detect wake */
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/ops.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/ops.c	2019-09-08 16:05:36.058947363 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/ops.c	2019-09-11 11:38:55.199303513 +0200
+@@ -903,9 +903,6 @@
+ 	kfree(mvm->error_recovery_buf);
+ 	mvm->error_recovery_buf = NULL;
+ 
+-#if defined(CONFIG_PM_SLEEP) && defined(CONFIG_IWLWIFI_DEBUGFS)
+-	kfree(mvm->d3_resume_sram);
+-#endif
+ 	iwl_trans_op_mode_leave(mvm->trans);
+ 
+ 	iwl_phy_db_free(mvm->phy_db);

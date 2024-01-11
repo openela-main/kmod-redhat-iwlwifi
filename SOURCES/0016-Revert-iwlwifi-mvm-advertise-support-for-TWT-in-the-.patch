@@ -1,0 +1,66 @@
+From b51d74dc1f62cae3bbc1ac9549bcf0a958d44847 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 25 Jul 2019 14:51:22 +0200
+Subject: [PATCH 3/3] Revert "iwlwifi: mvm: advertise support for TWT in the
+ Extended Capability IE"
+
+This reverts commit 7360f99e0b99e325ae945eb39a3407215403d4d2.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c |  3 ++-
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c  | 22 ----------------------
+ 2 files changed, 2 insertions(+), 23 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-07-25 13:58:41.795295113 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-07-25 14:52:20.098505819 +0200
+@@ -587,7 +587,8 @@
+ 			.has_he = true,
+ 			.he_cap_elem = {
+ 				.mac_cap_info[0] =
+-					IEEE80211_HE_MAC_CAP0_HTC_HE,
++					IEEE80211_HE_MAC_CAP0_HTC_HE |
++					IEEE80211_HE_MAC_CAP0_TWT_RES,
+ 				.mac_cap_info[1] =
+ 					IEEE80211_HE_MAC_CAP1_TF_MAC_PAD_DUR_16US |
+ 					IEEE80211_HE_MAC_CAP1_MULTI_TID_AGG_RX_QOS_8,
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-07-25 14:52:10.765633766 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-07-25 14:52:20.099505805 +0200
+@@ -395,21 +395,6 @@
+ 	return ret;
+ }
+ 
+-const static u8 he_if_types_ext_capa_sta[] = {
+-	 [0] = WLAN_EXT_CAPA1_EXT_CHANNEL_SWITCHING,
+-	 [7] = WLAN_EXT_CAPA8_OPMODE_NOTIF,
+-	 [9] = WLAN_EXT_CAPA10_TWT_REQUESTER_SUPPORT,
+-};
+-
+-const static struct wiphy_iftype_ext_capab he_iftypes_ext_capa[] = {
+-	{
+-		.iftype = NL80211_IFTYPE_STATION,
+-		.extended_capabilities = he_if_types_ext_capa_sta,
+-		.extended_capabilities_mask = he_if_types_ext_capa_sta,
+-		.extended_capabilities_len = sizeof(he_if_types_ext_capa_sta),
+-	},
+-};
+-
+ int iwl_mvm_mac_setup_register(struct iwl_mvm *mvm)
+ {
+ 	struct ieee80211_hw *hw = mvm->hw;
+@@ -700,13 +685,6 @@
+ 			NL80211_EXT_FEATURE_OCE_PROBE_REQ_HIGH_TX_RATE);
+ 	}
+ 
+-	if (mvm->nvm_data->sku_cap_11ax_enable &&
+-	    !iwlwifi_mod_params.disable_11ax) {
+-		hw->wiphy->iftype_ext_capab = he_iftypes_ext_capa;
+-		hw->wiphy->num_iftype_ext_capab =
+-			ARRAY_SIZE(he_iftypes_ext_capa);
+-	}
+-
+ 	mvm->rts_threshold = IEEE80211_MAX_RTS_THRESHOLD;
+ 
+ #ifdef CONFIG_PM_SLEEP

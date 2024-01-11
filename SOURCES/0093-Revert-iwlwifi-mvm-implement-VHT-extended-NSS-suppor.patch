@@ -1,0 +1,68 @@
+From d295c3fbfdfc7d3b42a527b9e91c4785c1790188 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 15:35:40 +0200
+Subject: [PATCH 1/5] Revert "iwlwifi: mvm: implement VHT extended NSS support
+ in rs.c"
+
+This reverts commit a53b2a0b1245d70430a8b541d76666b585346882.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rs.c | 23 ++---------------------
+ 1 file changed, 2 insertions(+), 21 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rs.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rs.c	2019-09-06 15:34:15.507755972 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rs.c	2019-09-06 15:42:07.252276422 +0200
+@@ -4,7 +4,7 @@
+  * Copyright(c) 2005 - 2014 Intel Corporation. All rights reserved.
+  * Copyright(c) 2013 - 2015 Intel Mobile Communications GmbH
+  * Copyright(c) 2016 - 2017 Intel Deutschland GmbH
+- * Copyright(c) 2018 - 2019 Intel Corporation
++ * Copyright(c) 2018 Intel Corporation
+  *
+  * Contact Information:
+  *  Intel Linux Wireless <linuxwifi@intel.com>
+@@ -1611,26 +1611,8 @@
+ 
+ static u32 rs_bw_from_sta_bw(struct ieee80211_sta *sta)
+ {
+-	struct ieee80211_sta_vht_cap *sta_vht_cap = &sta->vht_cap;
+-	struct ieee80211_vht_cap vht_cap = {
+-		.vht_cap_info = cpu_to_le32(sta_vht_cap->cap),
+-		.supp_mcs = sta_vht_cap->vht_mcs,
+-	};
+-
+ 	switch (sta->bandwidth) {
+ 	case IEEE80211_STA_RX_BW_160:
+-		/*
+-		 * Don't use 160 MHz if VHT extended NSS support
+-		 * says we cannot use 2 streams, we don't want to
+-		 * deal with this.
+-		 * We only check MCS 0 - they will support that if
+-		 * we got here at all and we don't care which MCS,
+-		 * we want to determine a more global state.
+-		 */
+-		if (ieee80211_get_vht_max_nss(&vht_cap,
+-					      IEEE80211_VHT_CHANWIDTH_160MHZ,
+-					      0, true) < sta->rx_nss)
+-			return RATE_MCS_CHAN_WIDTH_80;
+ 		return RATE_MCS_CHAN_WIDTH_160;
+ 	case IEEE80211_STA_RX_BW_80:
+ 		return RATE_MCS_CHAN_WIDTH_80;
+@@ -1763,7 +1745,7 @@
+ 			      struct iwl_scale_tbl_info *tbl,
+ 			      enum rs_action scale_action)
+ {
+-	if (rs_bw_from_sta_bw(sta) != RATE_MCS_CHAN_WIDTH_80)
++	if (sta->bandwidth != IEEE80211_STA_RX_BW_80)
+ 		return false;
+ 
+ 	if (!is_vht_siso(&tbl->rate))
+@@ -4082,7 +4064,6 @@
+ 	.add_sta_debugfs = rs_drv_add_sta_debugfs,
+ 	.remove_sta_debugfs = rs_remove_sta_debugfs,
+ #endif
+-	.capa = RATE_CTRL_CAPA_VHT_EXT_NSS_BW,
+ };
+ 
+ void iwl_mvm_rs_rate_init(struct iwl_mvm *mvm, struct ieee80211_sta *sta,

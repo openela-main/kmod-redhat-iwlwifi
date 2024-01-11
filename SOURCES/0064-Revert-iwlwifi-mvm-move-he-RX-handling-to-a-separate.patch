@@ -1,0 +1,24 @@
+From 14f32cc48eb034f122b8bd7d107c839279e97fae Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 18:52:17 +0200
+Subject: [PATCH 35/43] Revert "iwlwifi: mvm: move he RX handling to a separate
+ function"
+
+This reverts commit 4799ea53a57854b0b35f73703d9bfabf15bfd4f7.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:46.216282878 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/rxmq.c	2019-09-06 01:25:46.393280620 +0200
+@@ -1075,7 +1075,7 @@
+ 		if (he_phy_data & IWL_RX_HE_PHY_RU_ALLOC_SEC80)
+ 			he->data2 |=
+ 				cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA2_PRISEC_80_SEC);
+-	} else {
++	} else if (he) {
+ 		he->data1 |=
+ 			cpu_to_le16(IEEE80211_RADIOTAP_HE_DATA1_BW_RU_ALLOC_KNOWN);
+ 	}

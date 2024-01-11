@@ -1,0 +1,25 @@
+From 5ab76e5fae28344a68281b7bf0484af49e8bc014 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 1 Aug 2019 13:52:12 +0200
+Subject: [PATCH 2/4] Revert "iwlwifi: mvm: set HW capability VHT_EXT_NSS_BW"
+
+This reverts commit e2fae4db474b0545a4afba2c1382e0daa51375cf.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c b/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+index 65f77b06c252..1cc0801461b6 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+@@ -427,7 +427,6 @@ int iwl_mvm_mac_setup_register(struct iwl_mvm *mvm)
+ 	ieee80211_hw_set(hw, SUPPORTS_AMSDU_IN_AMPDU);
+ 	ieee80211_hw_set(hw, NEEDS_UNIQUE_STA_ADDR);
+ 	ieee80211_hw_set(hw, DEAUTH_NEED_MGD_TX_PREP);
+-	ieee80211_hw_set(hw, SUPPORTS_VHT_EXT_NSS_BW);
+ 
+ 	if (iwl_mvm_has_tlc_offload(mvm)) {
+ 		ieee80211_hw_set(hw, TX_AMPDU_SETUP_IN_HW);
+-- 
+2.13.6
+

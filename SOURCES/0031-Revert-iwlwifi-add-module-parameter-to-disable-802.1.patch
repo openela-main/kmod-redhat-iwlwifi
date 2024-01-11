@@ -1,0 +1,92 @@
+From f3623b10c8d9adac4a7e777a05972c934ac50560 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 5 Sep 2019 16:15:33 +0200
+Subject: [PATCH 02/43] Revert "iwlwifi: add module parameter to disable
+ 802.11ax"
+
+This reverts commit 230ba6c5a9df33bbd6ad5980a3f8dc446c3e881f.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-drv.c       | 4 ----
+ drivers/net/wireless/intel/iwlwifi/iwl-modparams.h | 4 ----
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 4 ++--
+ drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c  | 3 +--
+ drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c  | 3 +--
+ 5 files changed, 4 insertions(+), 14 deletions(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-drv.c	2019-06-27 14:54:04.129678386 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-drv.c	2019-09-06 01:25:40.743352688 +0200
+@@ -1860,7 +1860,3 @@
+ 		   0444);
+ MODULE_PARM_DESC(remove_when_gone,
+ 		 "Remove dev from PCIe bus if it is deemed inaccessible (default: false)");
+-
+-module_param_named(disable_11ax, iwlwifi_mod_params.disable_11ax, bool,
+-		   S_IRUGO);
+-MODULE_PARM_DESC(disable_11ax, "Disable HE capabilities (default: false)");
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h	2019-06-27 14:54:04.130678374 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-modparams.h	2019-09-06 01:25:40.743352688 +0200
+@@ -144,10 +144,6 @@
+ 	bool lar_disable;
+ 	bool fw_monitor;
+ 	bool disable_11ac;
+-	/**
+-	 * @disable_11ax: disable HE capabilities, default = false
+-	 */
+-	bool disable_11ax;
+ 	bool remove_when_gone;
+ 	bool enable_ini;
+ };
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:25:40.500355788 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:25:40.744352675 +0200
+@@ -595,7 +595,7 @@
+ 	iwl_init_ht_hw_capab(cfg, data, &sband->ht_cap, NL80211_BAND_2GHZ,
+ 			     tx_chains, rx_chains);
+ 
+-	if (data->sku_cap_11ax_enable && !iwlwifi_mod_params.disable_11ax)
++	if (data->sku_cap_11ax_enable)
+ 		iwl_init_he_hw_capab(sband, tx_chains, rx_chains);
+ 
+ 	sband = &data->bands[NL80211_BAND_5GHZ];
+@@ -610,7 +610,7 @@
+ 		iwl_init_vht_hw_capab(cfg, data, &sband->vht_cap,
+ 				      tx_chains, rx_chains);
+ 
+-	if (data->sku_cap_11ax_enable && !iwlwifi_mod_params.disable_11ax)
++	if (data->sku_cap_11ax_enable)
+ 		iwl_init_he_hw_capab(sband, tx_chains, rx_chains);
+ 
+ 	if (n_channels != n_used)
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-09-05 14:40:03.330474856 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac-ctxt.c	2019-09-06 01:25:40.745352663 +0200
+@@ -776,8 +776,7 @@
+ 	if (vif->probe_req_reg && vif->bss_conf.assoc && vif->p2p)
+ 		cmd.filter_flags |= cpu_to_le32(MAC_FILTER_IN_PROBE_REQUEST);
+ 
+-	if (vif->bss_conf.assoc && vif->bss_conf.he_support &&
+-	    !iwlwifi_mod_params.disable_11ax) {
++	if (vif->bss_conf.assoc && vif->bss_conf.he_support)
+ 		cmd.filter_flags |= cpu_to_le32(MAC_FILTER_IN_11AX);
+ 		if (vif->bss_conf.twt_requester)
+ 			ctxt_sta->data_policy |= cpu_to_le32(TWT_SUPPORTED);
+Index: src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:25:40.501355775 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/mvm/mac80211.c	2019-09-06 01:25:40.745352663 +0200
+@@ -2258,8 +2258,7 @@
+ 	 * added.
+ 	 */
+ 	if (changes & BSS_CHANGED_ASSOC && bss_conf->assoc) {
+-		if (vif->bss_conf.he_support &&
+-		    !iwlwifi_mod_params.disable_11ax)
++		if (vif->bss_conf.he_support)
+ 			iwl_mvm_cfg_he_sta(mvm, vif, mvmvif->ap_sta_id);
+ 
+ 		iwl_mvm_mac_ctxt_recalc_tsf_id(mvm, vif);

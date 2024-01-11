@@ -1,0 +1,30 @@
+From a594e9d1d06ddfb6dd3a20a181bf5f0be6481bff Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Fri, 6 Sep 2019 01:53:44 +0200
+Subject: [PATCH 6/7] Revert "iwlwifi: use kmemdup in iwl_parse_nvm_mcc_info()"
+
+This reverts commit af84282e2b48143894383d4d6d7812d72e292be9.
+---
+ drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c
+===================================================================
+--- src.orig/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:58:30.873997881 +0200
++++ src/drivers/net/wireless/intel/iwlwifi/iwl-nvm-parse.c	2019-09-06 01:58:31.063995435 +0200
+@@ -982,12 +982,14 @@
+ 	regd_to_copy = sizeof(struct ieee80211_regdomain) +
+ 		valid_rules * sizeof(struct ieee80211_reg_rule);
+ 
+-	copy_rd = kmemdup(regd, regd_to_copy, GFP_KERNEL);
++	copy_rd = kzalloc(regd_to_copy, GFP_KERNEL);
+ 	if (!copy_rd) {
+ 		copy_rd = ERR_PTR(-ENOMEM);
+ 		goto out;
+ 	}
+ 
++	memcpy(copy_rd, regd, regd_to_copy);
++
+ out:
+ 	kfree(regdb_ptrs);
+ 	kfree(regd);

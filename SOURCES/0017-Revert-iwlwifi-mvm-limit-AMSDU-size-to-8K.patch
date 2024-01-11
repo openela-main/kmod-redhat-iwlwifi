@@ -1,0 +1,31 @@
+From 1f907a5638fe2bb8d4f23c258e89bf2527070a02 Mon Sep 17 00:00:00 2001
+From: Eugene Syromiatnikov <esyr@redhat.com>
+Date: Thu, 25 Jul 2019 15:35:52 +0200
+Subject: [PATCH 1/7] Revert "iwlwifi: mvm: limit AMSDU size to 8K"
+
+This reverts commit 679bff239f51388a61a3cb4a512bc3a1d6e66d74.
+---
+ drivers/net/wireless/intel/iwlwifi/mvm/rs.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/intel/iwlwifi/mvm/rs.c b/drivers/net/wireless/intel/iwlwifi/mvm/rs.c
+index 63fdb4e68e9d..fb56b84bd088 100644
+--- a/drivers/net/wireless/intel/iwlwifi/mvm/rs.c
++++ b/drivers/net/wireless/intel/iwlwifi/mvm/rs.c
+@@ -1764,12 +1764,7 @@ static void rs_set_amsdu_len(struct iwl_mvm *mvm, struct ieee80211_sta *sta,
+ 	else
+ 		mvmsta->amsdu_enabled = 0xFFFF;
+ 
+-	if (mvmsta->vif->bss_conf.he_support &&
+-	    !iwlwifi_mod_params.disable_11ax)
+-		mvmsta->max_amsdu_len = sta->max_amsdu_len;
+-	else
+-		mvmsta->max_amsdu_len = min_t(int, sta->max_amsdu_len, 8500);
+-
++	mvmsta->max_amsdu_len = sta->max_amsdu_len;
+ 	sta->max_rc_amsdu_len = mvmsta->max_amsdu_len;
+ 
+ 	for (i = 0; i < IWL_MAX_TID_COUNT; i++) {
+-- 
+2.13.6
+
